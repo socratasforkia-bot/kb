@@ -19,10 +19,10 @@ Streamlit 기반 반응형 웹앱
        템플릿 본문에 {{ .Token }} 을 추가해야 학생에게 6자리 인증코드가 발송됩니다
        (기본 템플릿은 클릭형 링크만 있습니다)
     4) .streamlit/secrets.toml 에 아래 값 채우기
-        SUPABASE_URL = "https://xxxx.supabase.co"
-        SUPABASE_ANON_KEY = "..."
-        SUPABASE_SERVICE_KEY = "..."   # 관리자 기능(권한부여, 인증코드 발급 등)에 필요, 선택
-        COOKIE_PASSWORD = "아무 긴 임의 문자열"  # 로그인 유지용 쿠키 암호화 키 (필수 권장)
+        SUPABASE_URL = "https://wgkhdwxtvvlziuknlnqo.supabase.co" 
+SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqaG5ka21xZmNydmx3ZHVrcndkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODgyMjAsImV4cCI6MjEwMjM2NDIyMH0.ezT1Yk6S00slLmajXrPQInODcm2_njvDuevKZ3RJmfE" 
+SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indna2hkd3h0dnZseml1a25sbnFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Njk1MjYxNywiZXhwIjoyMTAyNTI4NjE3fQ.lAiI7lYdsa5bLptGB1iZFD5CkM80tZooWsZQbmCJ-XI"
+COOKIE_PASSWORD = "bk2026-nX7qP2vLzR9mK4jT8wY1sD6fH3aG5eB0cU"
 
 실행:
     pip install streamlit supabase streamlit-cookies-manager
@@ -263,48 +263,36 @@ def _debug_secret_paths() -> str:
 
 
 def _get_secret(key: str, required: bool = True, default=None):
-    try:
-        val = st.secrets.get(key)
-    except Exception:
-        val = None
-        if required:
-            st.error(
-                "`secrets.toml` 파일을 찾을 수 없습니다.\n\n"
-                "다음 경로들을 확인해봤습니다.\n\n"
-                f"{_debug_secret_paths()}\n\n"
-                "파일이 아예 없다면 스크립트가 있는 폴더 밑에 `.streamlit` 폴더를 만들고 "
-                "그 안에 `secrets.toml` 파일을 아래 형식으로 만들어주세요.\n\n"
-                "```\n"
-                "SUPABASE_URL = \"https://xxxxxxxxxxxx.supabase.co\"\n"
-                "SUPABASE_ANON_KEY = \"anon 키\"\n"
-                "SUPABASE_SERVICE_KEY = \"service_role 키 (선택)\"\n"
-                "```"
-            )
-            st.stop()
+    # Render에서는 Environment Variables를 우선 사용하고,
+    # 로컬에서는 기존 secrets.toml도 사용할 수 있습니다.
+    import os
+    val = os.getenv(key)
+    if not val:
+        try:
+            val = st.secrets.get(key)
+        except Exception:
+            val = None
     if required and not val:
         st.error(
-            f"`.streamlit/secrets.toml` 에 `{key}` 값이 설정되어 있지 않습니다.\n\n"
-            "함께 받은 `supabase_setup.sql` 안내와 secrets.toml 예시를 참고해 설정해주세요."
+            f"환경변수 `{key}`가 설정되어 있지 않습니다.\n\n"
+            "Render: Dashboard → Environment에 해당 변수를 추가해주세요.\n"
+            "로컬: `.streamlit/secrets.toml`을 사용해도 됩니다."
         )
         st.stop()
-    if not val:
-        return default
-    return val
+    return val if val else default
 
 
-SUPABASE_URL = _get_secret("SUPABASE_URL")
-SUPABASE_ANON_KEY = _get_secret("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = _get_secret("SUPABASE_SERVICE_KEY", required=False)
+SUPABASE_URL = _get_secret("https://wgkhdwxtvvlziuknlnqo.supabase.co")
+SUPABASE_ANON_KEY = _get_secret("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqaG5ka21xZmNydmx3ZHVrcndkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODgyMjAsImV4cCI6MjEwMjM2NDIyMH0.ezT1Yk6S00slLmajXrPQInODcm2_njvDuevKZ3RJmfE")
+SUPABASE_SERVICE_KEY = _get_secret("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indna2hkd3h0dnZseml1a25sbnFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Njk1MjYxNywiZXhwIjoyMTAyNTI4NjE3fQ.lAiI7lYdsa5bLptGB1iZFD5CkM80tZooWsZQbmCJ-XI", required=False)
 
 COOKIE_PASSWORD = _get_secret(
-    "COOKIE_PASSWORD", required=False,
+    "bk2026-nX7qP2vLzR9mK4jT8wY1sD6fH3aG5eB0cU", required=False,
     default="bukakje-insecure-default-change-me-in-secrets-toml",
 )
 if COOKIE_PASSWORD == "bukakje-insecure-default-change-me-in-secrets-toml":
     st.warning(
-        "⚠️ `secrets.toml` 에 `COOKIE_PASSWORD` 가 설정되어 있지 않아 "
-        "임시 기본값을 사용합니다. 서버를 재시작하면 로그인 유지 쿠키가 무효화될 수 있으니 "
-        "`COOKIE_PASSWORD = \"아무 긴 임의 문자열\"` 을 secrets.toml에 추가해주세요.",
+        "⚠️ `COOKIE_PASSWORD` 환경변수가 설정되어 있지 않아 임시 기본값을 사용합니다. Render에서는 Dashboard → Environment에 `COOKIE_PASSWORD`를 추가하는 것을 권장합니다.",
         icon="⚠️",
     )
 
