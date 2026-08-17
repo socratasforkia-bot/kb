@@ -174,6 +174,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import base64
 import io
+import re
 from datetime import datetime, date, time as dtime, timedelta
 from pathlib import Path
 
@@ -1012,6 +1013,52 @@ def delete_program(program_id):
 
 
 # ----------------------------------------------------------------------
+# 공개 시간 필터
+# - 비로그인 방문자는 시작 시간이 16:00 이상인 항목만 볼 수 있습니다.
+# - 로그인한 학생/교직원/관리자는 전체 항목을 볼 수 있습니다.
+# ----------------------------------------------------------------------
+def event_time_hour(value):
+    """시간 문자열에서 시작 시각의 hour를 반환합니다. 파싱할 수 없으면 None."""
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+
+    # 오전/오후 표기: 예) 오후 4시, 오후 4:30, 오전 10시
+    m = re.search(r"(오전|오후)\s*(\d{1,2})(?::(\d{2}))?\s*(?:시)?", text)
+    if m:
+        hour = int(m.group(2))
+        minute = int(m.group(3) or 0)
+        if hour == 12:
+            hour = 0
+        if m.group(1) == "오후":
+            hour += 12
+        return hour + minute / 60
+
+    # 24시간 표기: 예) 16:00, 16시, 16.00
+    m = re.search(r"(?<!\d)(\d{1,2})(?::|\.)(\d{2})", text)
+    if m:
+        return int(m.group(1)) + int(m.group(2)) / 60
+
+    m = re.search(r"(?<!\d)(\d{1,2})\s*시", text)
+    if m:
+        return int(m.group(1))
+
+    return None
+
+
+def filter_public_after_4(items, time_key):
+    return [
+        item for item in items
+        if event_time_hour(item.get(time_key)) is not None
+        and event_time_hour(item.get(time_key)) >= 16
+    ]
+
+
+def is_logged_in_user():
+    return current_user() is not None
+
+
+# ----------------------------------------------------------------------
 # 시간표 — Supabase 연동 (관리자 추가/수정/삭제 가능)
 # ----------------------------------------------------------------------
 @st.cache_data(ttl=SCHEDULE_CACHE_TTL)
@@ -1122,6 +1169,21 @@ def fetch_visit_daily(days: int = 14) -> dict:
         if day:
             counts[day] = counts.get(day, 0) + 1
     return dict(sorted(counts.items()))
+
+
+def delete_all_visits():
+    """관리자 페이지에서 방문자 통계를 전체 삭제합니다."""
+    admin_client = get_admin_client()
+    if admin_client is None:
+        return False, "SUPABASE_SERVICE_KEY가 설정되어 있어야 방문자 통계를 삭제할 수 있습니다."
+    try:
+        # UUID 컬럼이므로 빈 문자열이 아닌 모든 행을 대상으로 삭제합니다.
+        admin_client.table("visits").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        fetch_visit_total.clear()
+        fetch_visit_daily.clear()
+        return True, "방문자 통계를 모두 삭제했습니다."
+    except Exception as e:
+        return False, _friendly_db_error(e)
 
 
 # ----------------------------------------------------------------------
@@ -1408,19 +1470,14 @@ def logout():
 # 상단바 + 우측 슬라이드 드로어(햄버거 메뉴)
 # ----------------------------------------------------------------------
 PUBLIC_PAGES = [
-    ("메인", "🏠", "home"), ("축제 안내", "🎉", "intro"), ("프로그램", "🎤", "programs"),
+    ("메인", "🏠", "home"), ("프로그램", "🎤", "programs"),
     ("시간표", "📅", "schedule"), ("부스 정보", "🏪", "booths"), ("오시는 길", "📍", "directions"),
     ("공지사항", "📢", "notices"),
 ]
 
 # 사이드바(드로어) 메뉴에만 노출되는 페이지들.
-#   - "인사말": 별도 페이지
-#   - "프로그램 구성": 요청에 따라 사이드바에만 노출. 실제로는 기존 "프로그램"
-#     페이지로 연결됩니다(그 페이지 안에서 관리자는 등록/수정/삭제,
-#     일반 방문자는 조회를 할 수 있습니다).
 DRAWER_ONLY_PAGES = [
     ("인사말", "💌", "greeting"),
-    ("프로그램 구성", "🗂️", "program_manage"),
 ]
 
 SLUG_BY_NAME = {name: slug for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAGES}
@@ -1429,7 +1486,6 @@ NAV_SLUGS = {slug: name for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAG
 NAV_SLUGS.update({"login": "로그인", "mypage": "마이페이지", "admin": "관리자 페이지",
                    "booth_add": "부스 등록", "notice_add": "공지사항 등록",
                    "program_add": "프로그램 등록", "schedule_add": "시간표 등록",
-                   "program_manage": "프로그램",  # 사이드바 '프로그램 구성' → 프로그램 페이지로 연결
                    "logout": "__logout__"})
 
 
@@ -1520,7 +1576,7 @@ def page_main():
 
     st.write("")
     st.markdown('<div class="bk-iconmenu">', unsafe_allow_html=True)
-    icon_cols = st.columns(6)
+    icon_cols = st.columns(len(PUBLIC_PAGES) - 1)
     for col, (name, icon, slug) in zip(icon_cols, PUBLIC_PAGES[1:]):
         with col:
             if st.button(f"{icon}\n\n{name}", key=f"iconmenu-{name}", use_container_width=True):
@@ -1532,19 +1588,26 @@ def page_main():
     c1, c3 = st.columns(2)
 
     with c1:
+        user_logged_in = current_user() is not None
+        main_programs = fetch_programs()
+        if not user_logged_in:
+            main_programs = [p for p in main_programs if event_time_hour(p.get("time")) is not None and event_time_hour(p.get("time")) >= 16]
+        preview = main_programs[:4]
+        if preview:
+            program_items_html = "".join(
+                f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
+                f"<b>{p['time']}</b>&nbsp;&nbsp;{p['name']} "
+                f"<span style='color:{MUTED};'>({p['place']})</span></div>"
+                for p in preview
+            )
+        else:
+            program_items_html = f"<div style='color:{MUTED};font-size:13px;'>현재 공개할 프로그램이 없습니다.</div>"
         st.markdown(
             f"""
             <div class="bk-card">
-                <h4>🎉 축제 안내</h4>
-                <div style="height:110px;border-radius:12px;margin-bottom:10px;
-                            background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
-                            display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
-                    🏫
-                </div>
-                <div style="color:{MUTED};font-size:13px;">
-                    북악제 소개, 일정, 장소 등 모든 정보를 확인할 수 있습니다.
-                </div>
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['축제 안내']}" target="_self">자세히 보기 →</a>
+                <h4>🎤 프로그램</h4>
+                {program_items_html}
+                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">전체 프로그램 보기 →</a>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1552,6 +1615,9 @@ def page_main():
 
     with c3:
         grouped_main = fetch_schedule_by_day()
+        if not user_logged_in:
+            grouped_main = {day: [it for it in items if event_time_hour(it.get("time")) is not None and event_time_hour(it.get("time")) >= 16] for day, items in grouped_main.items()}
+            grouped_main = {day: items for day, items in grouped_main.items() if items}
         if grouped_main:
             first_day = list(grouped_main.keys())[0]
             schedule_items_html = "".join(
@@ -1561,7 +1627,7 @@ def page_main():
                 for it in grouped_main[first_day][:4]
             )
         else:
-            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
+            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>현재 공개할 시간표가 없습니다.</div>"
         st.markdown(
             f"""
             <div class="bk-card">
@@ -1608,38 +1674,6 @@ def page_main():
     if st.button("더 많은 부스 보기 →", key="btn-booths"):
         go("부스 정보"); st.rerun()
 
-    render_footer()
-
-
-# ----------------------------------------------------------------------
-# 페이지 : 축제 안내
-# ----------------------------------------------------------------------
-def page_intro():
-    st.markdown('<div class="bk-section-title">🎉 축제 안내</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div style="height:160px;border-radius:12px;margin-bottom:16px;
-                    background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
-                    display:flex;align-items:center;justify-content:center;color:white;font-size:52px;">
-            🏫
-        </div>
-        """, unsafe_allow_html=True,
-    )
-    st.markdown(f"""
-**북악제 소개**
-경복고등학교의 대표 축제인 **{FESTIVAL_NAME}**는 학생들이 직접 기획하고 준비하는
-공연, 체험, 전시가 어우러진 종합 축제입니다.
-
-**축제 일정**  {FESTIVAL_DATE.strftime('%Y년 %m월 %d일')}
-
-**축제 장소**  경복고등학교 전 교내 (운동장, 체육관, 본관 등)
-
-**주요 행사**  개막식·폐막식 · 동아리 공연 및 발표회 · 학급/동아리 체험 부스 · 학생 작품 전시
-
-**문의처**  {ss.site_info['phone']}
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
 
 
@@ -1699,7 +1733,14 @@ def page_programs():
     st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
 
     admin = is_admin()
+    logged_in = is_logged_in_user()
     all_programs = fetch_programs()
+
+    if not logged_in:
+        all_programs = filter_public_after_4(all_programs, "time")
+        st.caption("비로그인 상태에서는 오후 4시 이후 프로그램만 표시됩니다. 전체 프로그램을 보려면 학생/교직원 로그인이 필요합니다.")
+    else:
+        st.caption("로그인한 학생·교직원은 전체 프로그램을 확인할 수 있습니다.")
 
     categories = ["전체", "공연", "체험", "전시", "기타"]
     cat = st.radio("카테고리", categories, horizontal=True, label_visibility="collapsed")
@@ -1811,10 +1852,16 @@ def page_program_add():
 # ----------------------------------------------------------------------
 def page_schedule():
     st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
-    st.caption("로그인 없이 누구나 확인할 수 있습니다.")
 
     admin = is_admin()
+    logged_in = is_logged_in_user()
     grouped = fetch_schedule_by_day()
+    if not logged_in:
+        grouped = {day: filter_public_after_4(items, "time") for day, items in grouped.items()}
+        grouped = {day: items for day, items in grouped.items() if items}
+        st.caption("비로그인 상태에서는 오후 4시 이후 시간표만 표시됩니다. 전체 시간표를 보려면 학생/교직원 로그인이 필요합니다.")
+    else:
+        st.caption("로그인한 학생·교직원은 전체 시간표를 확인할 수 있습니다.")
 
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     if not grouped:
@@ -2561,6 +2608,19 @@ def page_admin():
             st.bar_chart(daily)
         else:
             st.info("아직 최근 14일간의 방문 기록이 없습니다.")
+
+        st.markdown("---")
+        st.subheader("방문자 통계 삭제")
+        st.caption("누적 방문 수와 일별 방문 기록을 모두 삭제합니다. 삭제 후에는 되돌릴 수 없습니다.")
+        if admin_client is None:
+            st.info("SUPABASE_SERVICE_KEY가 설정되어 있어야 삭제할 수 있습니다.")
+        else:
+            confirm_delete = st.checkbox("방문자 통계를 모두 삭제하는 것에 동의합니다.", key="confirm_delete_visits")
+            if st.button("🗑️ 방문자 통계 전체 삭제", type="secondary", disabled=not confirm_delete, use_container_width=True):
+                ok, msg = delete_all_visits()
+                (st.success if ok else st.error)(msg)
+                if ok:
+                    st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.caption("📢 공지사항/부스/프로그램/시간표 등록·수정·삭제는 각각의 메뉴 화면에서 직접 할 수 있습니다 "
@@ -2594,7 +2654,7 @@ def main():
     render_topbar_and_drawer()
 
     routes = {
-        "메인": page_main, "축제 안내": page_intro, "프로그램": page_programs,
+        "메인": page_main, "프로그램": page_programs,
         "시간표": page_schedule, "부스 정보": page_booths, "오시는 길": page_directions,
         "공지사항": page_notices, "인사말": page_greeting,
         "로그인": page_login, "마이페이지": page_mypage, "관리자 페이지": page_admin,
