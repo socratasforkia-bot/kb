@@ -1,3 +1,6 @@
 supabase
 streamlit
 streamlit-cookies-manager
+python-dotenv
+pandas
+Pillow
