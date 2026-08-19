@@ -1603,9 +1603,6 @@ def page_main():
                             display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
                     🎤
                 </div>
-                <div style="color:{MUTED};font-size:13px;">
-                    공연, 체험, 전시 등 북악제의 다양한 프로그램을 확인할 수 있습니다.
-                </div>
                 <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">프로그램 보기 →</a>
             </div>
             """,
