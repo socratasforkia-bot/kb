@@ -2181,28 +2181,29 @@ def page_directions():
     st.markdown('<div class="bk-section-title">📍 오시는 길</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.4, 1])
     with c1:
-        components.html(
-            """
-            <!-- * 카카오맵 - 지도퍼가기 -->
-            <!-- 1. 지도 노드 -->
-            <div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
-
-            <!-- 2. 설치 스크립트 -->
-            <script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
-
-            <!-- 3. 실행 스크립트 -->
-            <script charset="UTF-8">
-                new daum.roughmap.Lander({
-                    "timestamp" : "1785379777878",
-                    "key" : "s2wfzp5mbk8",
-                    "mapWidth" : "360",
-                    "mapHeight" : "360"
-                }).render();
-            </script>
-            """,
-            height=390,
-            scrolling=False
-        )
+        kakao_html = r'''\
+<!-- * 카카오맵 - 지도퍼가기 -->
+<div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+<script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
+<script charset="UTF-8">
+(function() {
+    function renderKakaoMap() {
+        if (window.daum && window.daum.roughmap && window.daum.roughmap.Lander) {
+            new daum.roughmap.Lander({
+                "timestamp" : "1785379777878",
+                "key" : "s2wfzp5mbk8",
+                "mapWidth" : "360",
+                "mapHeight" : "360"
+            }).render();
+        } else {
+            setTimeout(renderKakaoMap, 200);
+        }
+    }
+    renderKakaoMap();
+})();
+</script>
+'''
+        components.html(kakao_html, height=390, scrolling=False)
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         st.write(f"**주소**\n\n{ss.site_info['address']}")
