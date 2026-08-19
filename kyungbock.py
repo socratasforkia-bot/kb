@@ -818,9 +818,8 @@ def init_state():
             "subway": "3호선 경복궁역 3번 출구 도보 15분",
             "bus": "경복궁역 2번 출구에서 '7022','7212','1020' 탑승 후  '경복고등학교' 정류장 하차,'8111','7016','7018' 탑승 후 '효자동' 정류장 하차",
             "walk": "경복궁역에서 도보 약 15분",
-            "phone": "02-123-4567 (행사 운영본부)",
-            "email": "bukakje@kboye.kr",
-            "hours": "평일 09:00 ~ 17:00",
+            "phone": "02-397-5301 (학교)",
+            "email": "kb.bukakfestival@gmail.com",
         }
 
 
@@ -2856,7 +2855,6 @@ def render_footer():
         <div class="bk-footer">
             <b>📮 문의 및 안내</b><br>
             📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;|&nbsp; 🕒 {ss.site_info['hours']}<br>
-            🏫 경복고등학교 학생회
         </div>
         """,
         unsafe_allow_html=True,
