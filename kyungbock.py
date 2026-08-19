@@ -1598,11 +1598,6 @@ def page_main():
             f"""
             <div class="bk-card">
                 <h4>🎤 프로그램</h4>
-                <div style="height:110px;border-radius:12px;margin-bottom:10px;
-                            background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
-                            display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
-                    🎤
-                </div>
                 <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">프로그램 보기 →</a>
             </div>
             """,
