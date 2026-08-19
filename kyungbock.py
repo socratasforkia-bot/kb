@@ -816,7 +816,7 @@ def init_state():
         ss.site_info = {
             "address": "서울특별시 종로구 자하문로 17길 33 (경복고등학교)",
             "subway": "3호선 경복궁역 3번 출구 도보 15분",
-            "bus": "경복궁역 2번 출구에서 '7022','7212','1020' 탑승 후  '경복고등학교' 정류장 하차,'8111','7016','7018' 탑승 후 '효자동' 정류장 하차",
+            "bus": "경복궁역 2번 출구에서 '7022', '7212', '1020' 탑승 후 '경복고등학교' 정류장 하차, '8111', '7016', '7018' 탑승 후 '효자동' 정류장 하차",
             "walk": "경복궁역에서 도보 약 15분",
             "phone": "02-123-4567 (행사 운영본부)",
             "email": "bukakje@kboye.kr",
@@ -1559,118 +1559,122 @@ def render_topbar_and_drawer():
 # 페이지 : 메인
 # ----------------------------------------------------------------------
 def page_main():
-    hc1, hc2 = st.columns([2.6, 1])
+    # ------------------------------------------------------------------
+    # 메인 페이지: 정보가 없을 때도 빈 흰 박스가 길게 늘어지지 않도록
+    # 핵심 정보만 깔끔하게 보여주는 대시보드 형태로 구성합니다.
+    # ------------------------------------------------------------------
+    st.markdown("""
+    <style>
+    .main-wrap { margin-top: 8px; }
+    .main-hero {
+        background: linear-gradient(135deg, #10244A 0%, #183B73 62%, #24569A 100%);
+        border-radius: 24px;
+        padding: 34px 36px;
+        color: white;
+        box-shadow: 0 12px 32px rgba(16,36,74,.16);
+        margin-bottom: 18px;
+    }
+    .main-hero-kicker { font-size: 13px; font-weight: 800; letter-spacing: 1.4px; opacity: .72; }
+    .main-hero-title { font-size: 34px; font-weight: 900; line-height: 1.18; margin: 8px 0 8px; }
+    .main-hero-sub { font-size: 15px; opacity: .84; margin-bottom: 18px; }
+    .main-hero-meta { display:flex; flex-wrap:wrap; gap:8px; }
+    .main-hero-pill { background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16); padding:7px 11px; border-radius:999px; font-size:13px; }
+    .main-section { margin: 24px 0 10px; display:flex; align-items:end; justify-content:space-between; }
+    .main-section-title { font-size:21px; font-weight:900; color:#10244A; }
+    .main-section-desc { font-size:12px; color:#7A8497; margin-top:3px; }
+    .main-card {
+        background:#fff; border:1px solid #E9EDF4; border-radius:18px; padding:20px;
+        box-shadow:0 5px 18px rgba(15,31,61,.055); height:100%; box-sizing:border-box;
+    }
+    .main-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .main-card-icon { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:21px; background:#F1F5FB; }
+    .main-card-title { font-weight:900; color:#10244A; font-size:17px; }
+    .main-empty { padding:18px 4px 8px; color:#8A93A3; font-size:13px; }
+    .main-list-item { padding:11px 0; border-bottom:1px solid #EEF1F5; }
+    .main-list-item:last-child { border-bottom:0; }
+    .main-list-title { font-weight:800; font-size:14px; color:#1A2B49; }
+    .main-list-meta { color:#8A93A3; font-size:12px; margin-top:4px; }
+    .main-more { display:inline-block; margin-top:13px; color:#D66D25 !important; font-size:13px; font-weight:800; text-decoration:none !important; }
+    .main-booth { border:1px solid #EDF0F5; border-radius:14px; padding:10px; background:#FAFBFD; }
+    .main-booth-name { font-weight:800; color:#172946; font-size:13px; margin-top:8px; }
+    .main-booth-cat { color:#8A93A3; font-size:11px; margin-top:3px; }
+    </style>
+    <div class="main-wrap"></div>
+    """, unsafe_allow_html=True)
+
+    # 상단 히어로 + D-Day
+    hc1, hc2 = st.columns([3.7, 1.15], gap="medium")
     with hc1:
-        st.markdown(
-            f"""
-            <div class="bk-hero">
-                <div class="eyebrow">2025</div>
-                <h1>경복고등학교 {FESTIVAL_NAME}</h1>
-                <div class="slogan">{FESTIVAL_SLOGAN}</div>
-                <div class="meta">📅 {FESTIVAL_DATE.strftime('%Y. %m. %d')}(금)</div>
-                <div class="meta">📍 경복고등학교 교내 일대</div>
+        st.markdown(f"""
+        <div class="main-hero">
+            <div class="main-hero-kicker">KYUNGBOCK HIGH SCHOOL · FESTIVAL</div>
+            <div class="main-hero-title">경복고등학교 {FESTIVAL_NAME}</div>
+            <div class="main-hero-sub">{FESTIVAL_SLOGAN}</div>
+            <div class="main-hero-meta">
+                <span class="main-hero-pill">📅 {FESTIVAL_DATE.strftime('%Y. %m. %d')} (금)</span>
+                <span class="main-hero-pill">📍 경복고등학교 교내 일대</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        </div>
+        """, unsafe_allow_html=True)
     with hc2:
         render_dday_box()
 
-    st.write("")
-    st.markdown('<div class="bk-iconmenu">', unsafe_allow_html=True)
-    icon_cols = st.columns(6)
-    for col, (name, icon, slug) in zip(icon_cols, PUBLIC_PAGES[1:]):
+    # 자주 찾는 메뉴: 아이콘만 나열하지 않고 짧은 설명을 함께 표시
+    st.markdown("""
+    <div class="main-section"><div><div class="main-section-title">빠른 메뉴</div><div class="main-section-desc">축제에서 자주 확인하는 정보를 바로 찾아보세요.</div></div></div>
+    """, unsafe_allow_html=True)
+    quick = [("🎤", "프로그램"), ("📅", "시간표"), ("📢", "공지사항"), ("🏪", "부스 정보")]
+    qcols = st.columns(4, gap="medium")
+    for col, (icon, name) in zip(qcols, quick):
         with col:
-            if st.button(f"{icon}\n\n{name}", key=f"iconmenu-{name}", use_container_width=True):
-                go(name)
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+            if st.button(f"{icon}  {name}", key=f"main-quick-{name}", use_container_width=True):
+                go(name); st.rerun()
 
-    # 메인 페이지 프로그램 박스
-    # 프로그램이 없어도 박스 자체는 항상 표시해, 메인 화면에서 프로그램 영역을 바로 확인할 수 있게 합니다.
-    main_programs = fetch_programs()
-    st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
+    # 프로그램 / 시간표
+    st.markdown("""
+    <div class="main-section"><div><div class="main-section-title">오늘의 축제 정보</div><div class="main-section-desc">등록된 프로그램과 시간표를 한눈에 확인하세요.</div></div></div>
+    """, unsafe_allow_html=True)
+    c1, c2 = st.columns(2, gap="medium")
 
-    if main_programs:
-        for p in main_programs[:4]:
-            st.markdown(
-                f"<div style='padding:10px 0;border-bottom:1px solid #EEF0F5;'>"
-                f"<div style='font-weight:800;font-size:15px;'>{p['icon']} {p['name']}</div>"
-                f"<div style='color:{MUTED};font-size:13px;margin-top:3px;'>"
-                f"{p['date']} · {p['time']} · {p['place']}</div></div>",
-                unsafe_allow_html=True,
-            )
-    else:
-        st.markdown(
-            f"<div style='padding:16px 0;color:{MUTED};font-size:14px;'>"
-            "등록된 프로그램이 없습니다.</div>",
-            unsafe_allow_html=True,
-        )
+    with c1:
+        programs = fetch_programs()
+        items = []
+        for p in programs[:4]:
+            items.append(f"<div class='main-list-item'><div class='main-list-title'>{p.get('icon','🎫')} {p['name']}</div><div class='main-list-meta'>{p['date']} · {p['time']} · {p['place']}</div></div>")
+        body = ''.join(items) if items else "<div class='main-empty'>아직 등록된 프로그램이 없습니다.<br>프로그램이 등록되면 이곳에 바로 표시됩니다.</div>"
+        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>프로그램</div><div class='main-card-icon'>🎤</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a></div>", unsafe_allow_html=True)
 
-    st.markdown(
-        f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
-        unsafe_allow_html=True,
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+    with c2:
+        grouped = fetch_schedule_by_day()
+        sched = []
+        if grouped:
+            first_day = list(grouped.keys())[0]
+            for it in grouped[first_day][:4]:
+                sched.append(f"<div class='main-list-item'><div class='main-list-title'><b>{it['time']}</b>　{it['program']}</div><div class='main-list-meta'>{first_day} · {it['place']}</div></div>")
+        body = ''.join(sched) if sched else "<div class='main-empty'>아직 등록된 시간표가 없습니다.<br>시간표가 등록되면 이곳에 바로 표시됩니다.</div>"
+        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>시간표</div><div class='main-card-icon'>📅</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['시간표']}' target='_self'>전체 시간표 보기 →</a></div>", unsafe_allow_html=True)
 
-    # 시간표도 DB에 등록된 내용만 표시합니다.
-    st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
-    grouped_main = fetch_schedule_by_day()
-    if grouped_main:
-        first_day = list(grouped_main.keys())[0]
-        schedule_items_html = "".join(
-            f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
-            f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
-            f"<span style='color:{MUTED};'>({it['place']})</span></div>"
-            for it in grouped_main[first_day][:4]
-        )
-    else:
-        schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
-    st.markdown(
-        f"""
-        <div class="bk-card">
-            {schedule_items_html}
-            <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # 공지 / 부스
+    c3, c4 = st.columns(2, gap="medium")
+    with c3:
+        notices = fetch_notices("member" if current_user() is not None else "public")[:4]
+        rows = []
+        for n in notices:
+            badge = " <span style='color:#D66D25;font-size:10px;font-weight:900;'>NEW</span>" if n.get('new') else ''
+            rows.append(f"<div class='main-list-item'><div class='main-list-title'>{n['title']}{badge}</div><div class='main-list-meta'>{n['date']}</div></div>")
+        body = ''.join(rows) if rows else "<div class='main-empty'>새로운 공지사항이 없습니다.</div>"
+        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>공지사항</div><div class='main-card-icon'>📢</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['공지사항']}' target='_self'>공지사항 전체 보기 →</a></div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    main_notices = fetch_notices("member" if current_user() is not None else "public")
-    if not main_notices:
-        st.write("등록된 공지사항이 없습니다.")
-    for n in main_notices[:4]:
-        badge = "<span class='bk-badge-new'>NEW</span>" if n.get("new") else ""
-        st.markdown(
-            f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEF0F5;'>"
-            f"<div>{n['title']}{badge}</div><div style='color:{MUTED};font-size:13px;'>{n['date']}</div></div>",
-            unsafe_allow_html=True,
-        )
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="bk-section-title">🏪 부스 정보</div>', unsafe_allow_html=True)
-    main_booths = fetch_booths()
-    if not main_booths:
-        st.markdown('<div class="bk-card">등록된 부스가 아직 없습니다.</div>', unsafe_allow_html=True)
-    else:
-        bcols = st.columns(4)
-        for col, b in zip(bcols, main_booths[:4]):
-            with col:
-                img_html = booth_media_html(b, height="110px")
-                st.markdown(
-                    f"""
-                    <div class="bk-card" style="text-align:center;">
-                        {img_html}
-                        <div style="font-weight:800;margin-top:4px;">{b['name']}</div>
-                        <div style="color:{MUTED};font-size:13px;">{b['category']}</div>
-                    </div>
-                    """, unsafe_allow_html=True,
-                )
-    if st.button("더 많은 부스 보기 →", key="btn-booths"):
-        go("부스 정보"); st.rerun()
+    with c4:
+        booths = fetch_booths()[:4]
+        if booths:
+            booth_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">'
+            for b in booths:
+                booth_html += f"<div class='main-booth'>{booth_media_html(b, height='70px')}<div class='main-booth-name'>{b['name']}</div><div class='main-booth-cat'>{b.get('category','')}</div></div>"
+            booth_html += '</div>'
+        else:
+            booth_html = "<div class='main-empty'>아직 등록된 부스가 없습니다.<br>부스가 등록되면 이곳에서 확인할 수 있습니다.</div>"
+        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>부스 정보</div><div class='main-card-icon'>🏪</div></div>{booth_html}<a class='main-more' href='?nav={SLUG_BY_NAME['부스 정보']}' target='_self'>부스 전체 보기 →</a></div>", unsafe_allow_html=True)
 
     render_footer()
 
