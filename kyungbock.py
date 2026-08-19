@@ -1558,126 +1558,173 @@ def render_topbar_and_drawer():
 # ----------------------------------------------------------------------
 # 페이지 : 메인
 # ----------------------------------------------------------------------
+
+# 모바일 우선 메인 UI
+st.markdown("""
+<style>
+.mobile-home-head{padding:6px 2px 14px}
+.mobile-home-title{font-size:27px;font-weight:900;letter-spacing:-.8px;color:#172033}
+.mobile-home-sub{font-size:13px;color:#7b879c;margin-top:5px}
+.mobile-quick-card,.mobile-list-card,.mobile-schedule-row,.mobile-notice-row{
+  display:flex;align-items:center;text-decoration:none!important;color:#172033!important;
+  background:#fff;border:1px solid #e8edf4;border-radius:16px;
+  box-shadow:0 2px 10px rgba(30,45,70,.05);
+}
+.mobile-quick-card{min-height:78px;padding:13px 12px;margin-bottom:10px;gap:9px}
+.mobile-quick-icon{width:38px;height:38px;border-radius:12px;background:#f4f7fb;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 38px}
+.mobile-quick-text{display:flex;flex-direction:column;min-width:0;flex:1}
+.mobile-quick-text b{font-size:15px}
+.mobile-quick-text small,.mobile-list-main small,.mobile-schedule-main small{
+  color:#8a96a9;font-size:11px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-arrow{font-size:23px;color:#aab3c1;line-height:1}
+.mobile-section-row{display:flex;align-items:center;justify-content:space-between;
+  margin:18px 2px 8px;font-size:17px;letter-spacing:-.3px}
+.mobile-section-row a{font-size:12px;color:#f47a20!important;text-decoration:none!important;font-weight:700}
+.mobile-list-card{padding:12px 13px;margin-bottom:7px;gap:10px}
+.mobile-list-icon{width:34px;flex:0 0 34px;font-size:20px;text-align:center}
+.mobile-list-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.mobile-list-main b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-schedule-row{padding:11px 10px;margin-bottom:7px;gap:8px}
+.mobile-day{font-size:10px;color:#f47a20;font-weight:800;width:42px;flex:0 0 42px;text-align:center}
+.mobile-time{font-size:12px;font-weight:800;width:38px;flex:0 0 38px}
+.mobile-schedule-main{display:flex;flex-direction:column;min-width:0;flex:1}
+.mobile-schedule-main b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-notice-row{justify-content:space-between;padding:12px 13px;margin-bottom:7px;gap:10px}
+.mobile-notice-row>span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-notice-row small{font-size:10px;color:#9aa4b3;white-space:nowrap}
+.mobile-new{font-size:9px;color:#f47a20;font-weight:900;margin-right:6px}
+.mobile-empty{background:#f8fafc;border-radius:13px;padding:14px;color:#8a96a9;
+  font-size:12px;text-align:center;border:1px dashed #e0e6ef}
+@media(max-width:600px){
+  .block-container{padding-left:12px!important;padding-right:12px!important}
+  .mobile-home-title{font-size:25px}
+  .mobile-quick-card{min-height:72px}
+}
+</style>
+""", unsafe_allow_html=True)
+
 def page_main():
-    # ------------------------------------------------------------------
-    # 메인 페이지: 정보가 없을 때도 빈 흰 박스가 길게 늘어지지 않도록
-    # 핵심 정보만 깔끔하게 보여주는 대시보드 형태로 구성합니다.
-    # ------------------------------------------------------------------
+    """모바일 우선 메인 화면.
+    정보 밀도를 높이고 빈 공간을 줄여, 휴대폰에서 한 손으로 빠르게 확인할 수 있게 구성합니다.
+    """
     st.markdown("""
-    <style>
-    .main-wrap { margin-top: 8px; }
-    .main-hero {
-        background: linear-gradient(135deg, #10244A 0%, #183B73 62%, #24569A 100%);
-        border-radius: 24px;
-        padding: 34px 36px;
-        color: white;
-        box-shadow: 0 12px 32px rgba(16,36,74,.16);
-        margin-bottom: 18px;
-    }
-    .main-hero-kicker { font-size: 13px; font-weight: 800; letter-spacing: 1.4px; opacity: .72; }
-    .main-hero-title { font-size: 34px; font-weight: 900; line-height: 1.18; margin: 8px 0 8px; }
-    .main-hero-sub { font-size: 15px; opacity: .84; margin-bottom: 18px; }
-    .main-hero-meta { display:flex; flex-wrap:wrap; gap:8px; }
-    .main-hero-pill { background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16); padding:7px 11px; border-radius:999px; font-size:13px; }
-    .main-section { margin: 24px 0 10px; display:flex; align-items:end; justify-content:space-between; }
-    .main-section-title { font-size:21px; font-weight:900; color:#10244A; }
-    .main-section-desc { font-size:12px; color:#7A8497; margin-top:3px; }
-    .main-card {
-        background:#fff; border:1px solid #E9EDF4; border-radius:18px; padding:20px;
-        box-shadow:0 5px 18px rgba(15,31,61,.055); height:100%; box-sizing:border-box;
-    }
-    .main-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-    .main-card-icon { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:21px; background:#F1F5FB; }
-    .main-card-title { font-weight:900; color:#10244A; font-size:17px; }
-    .main-empty { padding:18px 4px 8px; color:#8A93A3; font-size:13px; }
-    .main-list-item { padding:11px 0; border-bottom:1px solid #EEF1F5; }
-    .main-list-item:last-child { border-bottom:0; }
-    .main-list-title { font-weight:800; font-size:14px; color:#1A2B49; }
-    .main-list-meta { color:#8A93A3; font-size:12px; margin-top:4px; }
-    .main-more { display:inline-block; margin-top:13px; color:#D66D25 !important; font-size:13px; font-weight:800; text-decoration:none !important; }
-    .main-booth { border:1px solid #EDF0F5; border-radius:14px; padding:10px; background:#FAFBFD; }
-    .main-booth-name { font-weight:800; color:#172946; font-size:13px; margin-top:8px; }
-    .main-booth-cat { color:#8A93A3; font-size:11px; margin-top:3px; }
-    </style>
-    <div class="main-wrap"></div>
+    <div class="mobile-home-head">
+      <div class="mobile-home-title">오늘 뭐 하지?</div>
+      <div class="mobile-home-sub">프로그램 · 시간표 · 공지 · 부스를 한눈에 확인하세요.</div>
+    </div>
     """, unsafe_allow_html=True)
 
-    # 상단 히어로 + D-Day
-    hc1, hc2 = st.columns([3.7, 1.15], gap="medium")
-    with hc1:
-        st.markdown(f"""
-        <div class="main-hero">
-            <div class="main-hero-kicker">KYUNGBOCK HIGH SCHOOL · FESTIVAL</div>
-            <div class="main-hero-title">경복고등학교 {FESTIVAL_NAME}</div>
-            <div class="main-hero-sub">{FESTIVAL_SLOGAN}</div>
-            <div class="main-hero-meta">
-                <span class="main-hero-pill">📅 {FESTIVAL_DATE.strftime('%Y. %m. %d')} (금)</span>
-                <span class="main-hero-pill">📍 경복고등학교 교내 일대</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    with hc2:
-        render_dday_box()
+    programs = fetch_programs()
+    schedules = fetch_schedule_by_day()
+    notices = fetch_notices("member" if current_user() is not None else "public")
+    booths = fetch_booths()
 
-    # 자주 찾는 메뉴: 아이콘만 나열하지 않고 짧은 설명을 함께 표시
-    st.markdown("""
-    <div class="main-section"><div><div class="main-section-title">빠른 메뉴</div><div class="main-section-desc">축제에서 자주 확인하는 정보를 바로 찾아보세요.</div></div></div>
-    """, unsafe_allow_html=True)
-    quick = [("🎤", "프로그램"), ("📅", "시간표"), ("📢", "공지사항"), ("🏪", "부스 정보")]
-    qcols = st.columns(4, gap="medium")
-    for col, (icon, name) in zip(qcols, quick):
-        with col:
-            if st.button(f"{icon}  {name}", key=f"main-quick-{name}", use_container_width=True):
-                go(name); st.rerun()
+    # 4개 핵심 메뉴: 모바일에서는 2×2로 자연스럽게 배치
+    quick = [
+        ("🎤", "프로그램", len(programs), "programs"),
+        ("📅", "시간표", sum(len(v) for v in schedules.values()), "schedule"),
+        ("📢", "공지사항", len(notices), "notices"),
+        ("🏪", "부스", len(booths), "booths"),
+    ]
+    qcols = st.columns(2)
+    for i, (icon, title, count, slug) in enumerate(quick):
+        with qcols[i % 2]:
+            st.markdown(
+                f"""<a class="mobile-quick-card" href="?nav={SLUG_BY_NAME[title]}" target="_self">
+                    <span class="mobile-quick-icon">{icon}</span>
+                    <span class="mobile-quick-text"><b>{title}</b><small>{count}개 등록</small></span>
+                    <span class="mobile-arrow">›</span>
+                </a>""",
+                unsafe_allow_html=True,
+            )
 
-    # 프로그램 / 시간표
-    st.markdown("""
-    <div class="main-section"><div><div class="main-section-title">오늘의 축제 정보</div><div class="main-section-desc">등록된 프로그램과 시간표를 한눈에 확인하세요.</div></div></div>
-    """, unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="medium")
+    # 오늘의 프로그램
+    st.markdown('<div class="mobile-section-row"><b>🎤 프로그램</b>'
+                f'<a href="?nav={SLUG_BY_NAME["프로그램"]}" target="_self">전체 보기 ›</a></div>',
+                unsafe_allow_html=True)
 
-    with c1:
-        programs = fetch_programs()
-        items = []
-        for p in programs[:4]:
-            items.append(f"<div class='main-list-item'><div class='main-list-title'>{p.get('icon','🎫')} {p['name']}</div><div class='main-list-meta'>{p['date']} · {p['time']} · {p['place']}</div></div>")
-        body = ''.join(items) if items else "<div class='main-empty'>아직 등록된 프로그램이 없습니다.<br>프로그램이 등록되면 이곳에 바로 표시됩니다.</div>"
-        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>프로그램</div><div class='main-card-icon'>🎤</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a></div>", unsafe_allow_html=True)
+    if programs:
+        for p in programs[:3]:
+            st.markdown(
+                f"""<a class="mobile-list-card" href="?nav={SLUG_BY_NAME["프로그램"]}" target="_self">
+                    <span class="mobile-list-icon">{p.get("icon") or "🎫"}</span>
+                    <span class="mobile-list-main">
+                      <b>{p["name"]}</b>
+                      <small>{p["date"]} · {p["time"]} · {p["place"]}</small>
+                    </span>
+                    <span class="mobile-arrow">›</span>
+                </a>""",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown('<div class="mobile-empty">아직 등록된 프로그램이 없습니다.</div>',
+                    unsafe_allow_html=True)
 
-    with c2:
-        grouped = fetch_schedule_by_day()
-        sched = []
-        if grouped:
-            first_day = list(grouped.keys())[0]
-            for it in grouped[first_day][:4]:
-                sched.append(f"<div class='main-list-item'><div class='main-list-title'><b>{it['time']}</b>　{it['program']}</div><div class='main-list-meta'>{first_day} · {it['place']}</div></div>")
-        body = ''.join(sched) if sched else "<div class='main-empty'>아직 등록된 시간표가 없습니다.<br>시간표가 등록되면 이곳에 바로 표시됩니다.</div>"
-        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>시간표</div><div class='main-card-icon'>📅</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['시간표']}' target='_self'>전체 시간표 보기 →</a></div>", unsafe_allow_html=True)
+    # 시간표
+    st.markdown('<div class="mobile-section-row"><b>📅 시간표</b>'
+                f'<a href="?nav={SLUG_BY_NAME["시간표"]}" target="_self">전체 보기 ›</a></div>',
+                unsafe_allow_html=True)
+    flat = []
+    for day, items in schedules.items():
+        for item in items:
+            flat.append((day, item))
+    if flat:
+        for day, item in flat[:4]:
+            st.markdown(
+                f"""<a class="mobile-schedule-row" href="?nav={SLUG_BY_NAME["시간표"]}" target="_self">
+                    <span class="mobile-day">{day}</span>
+                    <span class="mobile-time">{item["time"]}</span>
+                    <span class="mobile-schedule-main"><b>{item["program"]}</b>
+                    <small>{item["place"]}</small></span>
+                    <span class="mobile-arrow">›</span>
+                </a>""",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown('<div class="mobile-empty">아직 등록된 시간표가 없습니다.</div>',
+                    unsafe_allow_html=True)
 
-    # 공지 / 부스
-    c3, c4 = st.columns(2, gap="medium")
-    with c3:
-        notices = fetch_notices("member" if current_user() is not None else "public")[:4]
-        rows = []
-        for n in notices:
-            badge = " <span style='color:#D66D25;font-size:10px;font-weight:900;'>NEW</span>" if n.get('new') else ''
-            rows.append(f"<div class='main-list-item'><div class='main-list-title'>{n['title']}{badge}</div><div class='main-list-meta'>{n['date']}</div></div>")
-        body = ''.join(rows) if rows else "<div class='main-empty'>새로운 공지사항이 없습니다.</div>"
-        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>공지사항</div><div class='main-card-icon'>📢</div></div>{body}<a class='main-more' href='?nav={SLUG_BY_NAME['공지사항']}' target='_self'>공지사항 전체 보기 →</a></div>", unsafe_allow_html=True)
+    # 공지
+    st.markdown('<div class="mobile-section-row"><b>📢 공지사항</b>'
+                f'<a href="?nav={SLUG_BY_NAME["공지사항"]}" target="_self">전체 보기 ›</a></div>',
+                unsafe_allow_html=True)
+    if notices:
+        for n in notices[:3]:
+            badge = '<span class="mobile-new">NEW</span>' if n.get("new") else ""
+            st.markdown(
+                f"""<a class="mobile-notice-row" href="?nav={SLUG_BY_NAME["공지사항"]}" target="_self">
+                    <span>{badge}{n["title"]}</span>
+                    <small>{n["date"]}</small>
+                </a>""",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown('<div class="mobile-empty">새로운 공지사항이 없습니다.</div>',
+                    unsafe_allow_html=True)
 
-    with c4:
-        booths = fetch_booths()[:4]
-        if booths:
-            booth_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">'
-            for b in booths:
-                booth_html += f"<div class='main-booth'>{booth_media_html(b, height='70px')}<div class='main-booth-name'>{b['name']}</div><div class='main-booth-cat'>{b.get('category','')}</div></div>"
-            booth_html += '</div>'
-        else:
-            booth_html = "<div class='main-empty'>아직 등록된 부스가 없습니다.<br>부스가 등록되면 이곳에서 확인할 수 있습니다.</div>"
-        st.markdown(f"<div class='main-card'><div class='main-card-head'><div class='main-card-title'>부스 정보</div><div class='main-card-icon'>🏪</div></div>{booth_html}<a class='main-more' href='?nav={SLUG_BY_NAME['부스 정보']}' target='_self'>부스 전체 보기 →</a></div>", unsafe_allow_html=True)
+    # 부스
+    st.markdown('<div class="mobile-section-row"><b>🏪 부스</b>'
+                f'<a href="?nav={SLUG_BY_NAME["부스 정보"]}" target="_self">전체 보기 ›</a></div>',
+                unsafe_allow_html=True)
+    if booths:
+        for b in booths[:3]:
+            st.markdown(
+                f"""<a class="mobile-list-card" href="?nav={SLUG_BY_NAME["부스 정보"]}" target="_self">
+                    <span class="mobile-list-icon">{b.get("icon") or "🏪"}</span>
+                    <span class="mobile-list-main">
+                      <b>{b["name"]}</b>
+                      <small>{b.get("category") or ""} · {b.get("place") or ""}</small>
+                    </span>
+                    <span class="mobile-arrow">›</span>
+                </a>""",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown('<div class="mobile-empty">아직 등록된 부스가 없습니다.</div>',
+                    unsafe_allow_html=True)
 
     render_footer()
-
 
 # ----------------------------------------------------------------------
 # 페이지 : 디지털 방문증 (사이드바 전용)
