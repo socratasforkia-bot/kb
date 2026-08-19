@@ -177,6 +177,7 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
 
 import streamlit as st
 import streamlit.components.v1 as components
+import folium
 import base64
 import random
 import io
@@ -758,38 +759,33 @@ hr {{border-color: #E5E7EF;}}
 }}
 
 /* ---------------- 디지털 방문증 (프리미엄 티켓형) ---------------- */
-.bk-pass-wrap {{ width:100%; max-width:500px; margin:8px auto 24px; }}
-.bk-pass-card {{ position:relative; overflow:hidden; border-radius:28px; background:#fff; border:1px solid #D7DCE6; box-shadow:0 22px 55px rgba(15,31,61,.18); }}
-.bk-pass-top {{ position:relative; padding:30px 28px 34px; text-align:center; background:linear-gradient(145deg,#071B3A 0%,#0B3268 62%,#145DA0 100%); color:#fff; overflow:hidden; }}
-.bk-pass-top::before {{ content:""; position:absolute; width:250px; height:250px; border:1px solid rgba(255,255,255,.12); border-radius:50%; left:50%; top:48%; transform:translate(-50%,-50%); box-shadow:0 0 0 22px rgba(255,255,255,.025),0 0 0 44px rgba(255,255,255,.02); }}
-.bk-pass-top::after {{ content:"✦  ·  ✦  ·  ✦"; position:absolute; top:14px; right:20px; color:rgba(255,255,255,.42); font-size:12px; letter-spacing:4px; }}
-.bk-pass-spark {{ position:absolute; color:#79B7FF; opacity:.85; z-index:1; font-size:18px; }}
-.bk-pass-spark.s1 {{ left:20px; top:28px; }} .bk-pass-spark.s2 {{ left:43px; top:62px; font-size:10px; }} .bk-pass-spark.s3 {{ right:25px; bottom:42px; }} .bk-pass-spark.s4 {{ right:54px; bottom:72px; font-size:11px; }}
-.bk-pass-top-label {{ position:relative; z-index:3; font-size:9px; font-weight:900; letter-spacing:2.6px; color:rgba(255,255,255,.62); margin-bottom:12px; }}
-.bk-pass-emblem {{ width:142px; height:142px; object-fit:contain; display:block; margin:0 auto 8px; position:relative; z-index:3; filter:drop-shadow(0 8px 18px rgba(0,0,0,.25)); }}
-.bk-pass-title-main {{ position:relative; z-index:3; font-family:'Nanum Myeongjo','Noto Sans KR',serif; font-size:48px; line-height:1; font-weight:900; letter-spacing:8px; text-indent:8px; color:#fff; margin:2px 0 12px; text-shadow:0 4px 16px rgba(0,0,0,.22); }}
-.bk-pass-subtitle {{ position:relative; z-index:3; font-size:10px; font-weight:800; letter-spacing:2.2px; color:rgba(255,255,255,.7); }}
-.bk-pass-rule {{ position:relative; z-index:3; display:flex; align-items:center; gap:10px; width:78%; margin:17px auto 0; color:#8CC4FF; }}
-.bk-pass-rule span {{ flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(140,196,255,.65)); }} .bk-pass-rule span:last-child {{ background:linear-gradient(90deg,rgba(140,196,255,.65),transparent); }} .bk-pass-rule b {{ font-size:15px; text-shadow:0 0 12px rgba(120,190,255,.7); }}
-.bk-pass-perforation {{ position:relative; height:1px; border-top:2px dashed #D7DCE6; margin:0 20px; }}
-.bk-pass-perforation::before,.bk-pass-perforation::after {{ content:""; position:absolute; top:-15px; width:29px; height:29px; background:{BG}; border-radius:50%; box-shadow:inset 0 0 0 1px #D7DCE6; }}
-.bk-pass-perforation::before {{ left:-35px; }} .bk-pass-perforation::after {{ right:-35px; }}
-.bk-pass-bottom {{ position:relative; display:grid; grid-template-columns:1fr 1px 86px; gap:18px; padding:22px 26px 19px; background:linear-gradient(180deg,#fff 0%,#F8FAFD 100%); }}
-.bk-pass-bottom::before {{ content:""; position:absolute; left:26px; right:26px; top:9px; height:3px; border-radius:999px; background:linear-gradient(90deg,#0B63A7 0 35%,#D9C28D 35% 65%,#0B63A7 65%); opacity:.9; }}
-.bk-pass-bottom-left {{ min-width:0; padding-top:4px; }} .bk-pass-bl-title {{ color:#0B63A7; font-size:12px; font-weight:900; letter-spacing:2px; margin-bottom:11px; }}
-.bk-pass-meta-row {{ color:#475467; font-size:13px; line-height:1.55; margin-bottom:7px; }}
-.bk-pass-name-label {{ margin-top:11px; font-size:10px; font-weight:900; letter-spacing:1.5px; color:#98A2B3; }}
-.bk-pass-name-box {{ margin:3px 0 8px; padding:5px 0 7px; border-bottom:2px solid #0B63A7; font-size:18px; font-weight:900; color:#0F1F3D; word-break:keep-all; }}
-.bk-pass-name-box.empty {{ color:#98A2B3; font-size:14px; font-weight:600; }}
-.bk-pass-name-type {{ margin-left:8px; padding:3px 7px; border-radius:999px; background:#EAF4FC; color:#0B63A7; font-size:9px; font-weight:800; vertical-align:middle; }}
-.date-row {{ margin-top:8px; }} .bk-pass-vdivider {{ width:1px; background:repeating-linear-gradient(to bottom,#D9DEE8 0,#D9DEE8 5px,transparent 5px,transparent 10px); }}
-.bk-pass-bottom-right {{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding-top:5px; }}
-.bk-pass-date-label {{ font-size:9px; font-weight:900; letter-spacing:2px; color:#98A2B3; }} .bk-pass-date-num {{ color:#0B63A7; font-size:43px; font-weight:900; line-height:1.02; }}
-.bk-pass-weekday-eng {{ margin-top:3px; color:#667085; font-size:10px; font-weight:800; letter-spacing:2px; }}
-.bk-pass-barcode {{ width:52px; height:32px; margin-top:10px; background:repeating-linear-gradient(90deg,#0F1F3D 0 2px,transparent 2px 4px,#0F1F3D 4px 5px,transparent 5px 8px); opacity:.82; }}
-.bk-pass-footer {{ display:flex; justify-content:space-between; gap:10px; padding:12px 22px; background:#0B63A7; color:#fff; font-size:9px; font-weight:900; letter-spacing:1.8px; }}
+.bk-pass-wrap {{ width:100%; max-width:520px; margin:0 auto 20px; }}
+.bk-pass-card {{ position:relative; overflow:hidden; border-radius:24px; background:#fff; border:1px solid #D9DEE8; box-shadow:0 18px 45px rgba(15,31,61,.16); }}
+.bk-pass-top {{ position:relative; padding:30px 28px 25px; text-align:center; background:linear-gradient(180deg,#fff 0%,#F7F9FC 100%); border-bottom:1px solid #E1E5EC; }}
+.bk-pass-top::before {{ content:""; position:absolute; inset:10px; border:1px solid rgba(11,99,167,.16); border-radius:16px; pointer-events:none; }}
+.bk-pass-top-label {{ position:relative; z-index:2; font-size:10px; font-weight:800; letter-spacing:2px; color:#7A8495; margin-bottom:10px; }}
+.bk-pass-emblem {{ width:136px; height:136px; object-fit:contain; display:block; margin:0 auto 8px; position:relative; z-index:2; }}
+.bk-pass-title-main {{ position:relative; z-index:2; font-family:'Nanum Myeongjo','Noto Sans KR',serif; font-size:44px; line-height:1; font-weight:900; letter-spacing:8px; text-indent:8px; color:#0B63A7; margin:3px 0 10px; }}
+.bk-pass-subtitle {{ position:relative; z-index:2; font-size:11px; font-weight:800; letter-spacing:2px; color:#667085; }}
+.bk-pass-rule {{ position:relative; z-index:2; display:flex; align-items:center; gap:9px; width:75%; margin:15px auto 0; color:#C59642; }}
+.bk-pass-rule span {{ flex:1; height:1px; background:#D9C28D; }} .bk-pass-rule b {{ font-size:12px; }}
+.bk-pass-perforation {{ position:relative; height:1px; border-top:2px dashed #D9DEE8; margin:0 20px; }}
+.bk-pass-perforation::before,.bk-pass-perforation::after {{ content:""; position:absolute; top:-14px; width:27px; height:27px; background:{BG}; border-radius:50%; }}
+.bk-pass-perforation::before {{ left:-34px; }} .bk-pass-perforation::after {{ right:-34px; }}
+.bk-pass-bottom {{ display:grid; grid-template-columns:1fr 1px 92px; gap:18px; padding:24px 27px 22px; background:#fff; }}
+.bk-pass-bottom-left {{ min-width:0; }} .bk-pass-bl-title {{ color:#0B63A7; font-size:15px; font-weight:900; letter-spacing:1px; margin-bottom:14px; }}
+.bk-pass-meta-row {{ color:#475467; font-size:13px; line-height:1.55; margin-bottom:6px; }}
+.bk-pass-name-label {{ margin-top:13px; font-size:10px; font-weight:900; letter-spacing:1.5px; color:#98A2B3; }}
+.bk-pass-name-box {{ margin:4px 0 10px; padding:5px 0 8px; border-bottom:2px solid #0B63A7; font-size:20px; font-weight:900; color:#0F1F3D; word-break:keep-all; }}
+.bk-pass-name-box.empty {{ color:#98A2B3; font-size:15px; font-weight:600; }}
+.bk-pass-name-type {{ margin-left:8px; padding:3px 7px; border-radius:999px; background:#EEF5FB; color:#0B63A7; font-size:10px; font-weight:800; vertical-align:middle; }}
+.date-row {{ margin-top:9px; }} .bk-pass-vdivider {{ width:1px; background:repeating-linear-gradient(to bottom,#D9DEE8 0,#D9DEE8 5px,transparent 5px,transparent 10px); }}
+.bk-pass-bottom-right {{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }}
+.bk-pass-date-label {{ font-size:10px; font-weight:900; letter-spacing:2px; color:#98A2B3; }} .bk-pass-date-num {{ color:#0B63A7; font-size:42px; font-weight:900; line-height:1.05; }}
+.bk-pass-weekday-eng {{ margin-top:3px; color:#667085; font-size:11px; font-weight:800; letter-spacing:2px; }}
+.bk-pass-footer {{ display:flex; justify-content:space-between; gap:10px; padding:11px 22px; background:#0B63A7; color:#fff; font-size:9px; font-weight:900; letter-spacing:1.5px; }}
 .bk-pass-register {{ margin-top:14px; }}
-@media (max-width:600px) {{ .bk-pass-wrap {{max-width:100%;}} .bk-pass-top {{padding:25px 18px 29px;}} .bk-pass-emblem {{width:118px;height:118px;}} .bk-pass-title-main {{font-size:38px;letter-spacing:6px;text-indent:6px;}} .bk-pass-bottom {{grid-template-columns:1fr 1px 72px;gap:12px;padding:20px 18px;}} .bk-pass-date-num {{font-size:34px;}} .bk-pass-name-box {{font-size:17px;}} }} .bk-pass-top {{padding:24px 18px 21px;}} .bk-pass-emblem {{width:112px;height:112px;}} .bk-pass-title-main {{font-size:36px;letter-spacing:6px;text-indent:6px;}} .bk-pass-bottom {{grid-template-columns:1fr 1px 72px;gap:12px;padding:20px 18px;}} .bk-pass-date-num {{font-size:34px;}} }}
+@media (max-width:600px) {{ .bk-pass-wrap {{max-width:100%;}} .bk-pass-top {{padding:24px 18px 21px;}} .bk-pass-emblem {{width:112px;height:112px;}} .bk-pass-title-main {{font-size:36px;letter-spacing:6px;text-indent:6px;}} .bk-pass-bottom {{grid-template-columns:1fr 1px 72px;gap:12px;padding:20px 18px;}} .bk-pass-date-num {{font-size:34px;}} }}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -820,7 +816,7 @@ def init_state():
         ss.site_info = {
             "address": "서울특별시 종로구 자하문로 17길 33 (경복고등학교)",
             "subway": "3호선 경복궁역 3번 출구 도보 15분",
-            "bus": "간선/지선버스 다수 노선 '경복고등학교' 정류장 하차",
+            "bus": "경복궁역 2번 출구에서 '7022','7212','1020' 탑승 후  '경복고등학교' 정류장 하차,'8111','7016','7018' 탑승 후 '효자동' 정류장 하차",
             "walk": "경복궁역에서 도보 약 15분",
             "phone": "02-123-4567 (행사 운영본부)",
             "email": "bukakje@kboye.kr",
@@ -1590,42 +1586,56 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="bk-section-title">주요 메뉴</div>', unsafe_allow_html=True)
-    c1, c3 = st.columns(2)
+    # 메인 페이지 프로그램 박스
+    # 프로그램이 없어도 박스 자체는 항상 표시해, 메인 화면에서 프로그램 영역을 바로 확인할 수 있게 합니다.
+    main_programs = fetch_programs()
+    st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
+    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
 
-    with c1:
-        st.markdown(
-            f"""
-            <div class="bk-card">
-                <h4>🎤 프로그램</h4>
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">프로그램 보기 →</a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with c3:
-        grouped_main = fetch_schedule_by_day()
-        if grouped_main:
-            first_day = list(grouped_main.keys())[0]
-            schedule_items_html = "".join(
-                f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
-                f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
-                f"<span style='color:{MUTED};'>({it['place']})</span></div>"
-                for it in grouped_main[first_day][:4]
+    if main_programs:
+        for p in main_programs[:4]:
+            st.markdown(
+                f"<div style='padding:10px 0;border-bottom:1px solid #EEF0F5;'>"
+                f"<div style='font-weight:800;font-size:15px;'>{p['icon']} {p['name']}</div>"
+                f"<div style='color:{MUTED};font-size:13px;margin-top:3px;'>"
+                f"{p['date']} · {p['time']} · {p['place']}</div></div>",
+                unsafe_allow_html=True,
             )
-        else:
-            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
+    else:
         st.markdown(
-            f"""
-            <div class="bk-card">
-                <h4>📅 시간표</h4>
-                {schedule_items_html}
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
-            </div>
-            """,
+            f"<div style='padding:16px 0;color:{MUTED};font-size:14px;'>"
+            "등록된 프로그램이 없습니다.</div>",
             unsafe_allow_html=True,
         )
+
+    st.markdown(
+        f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 시간표도 DB에 등록된 내용만 표시합니다.
+    st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
+    grouped_main = fetch_schedule_by_day()
+    if grouped_main:
+        first_day = list(grouped_main.keys())[0]
+        schedule_items_html = "".join(
+            f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
+            f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
+            f"<span style='color:{MUTED};'>({it['place']})</span></div>"
+            for it in grouped_main[first_day][:4]
+        )
+    else:
+        schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
+    st.markdown(
+        f"""
+        <div class="bk-card">
+            {schedule_items_html}
+            <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
@@ -1688,7 +1698,6 @@ def page_visitor_pass():
     st.markdown(f"""
     <div class="bk-pass-wrap"><div class="bk-pass-card">
       <div class="bk-pass-top">
-        <span class="bk-pass-spark s1">✦</span><span class="bk-pass-spark s2">✦</span><span class="bk-pass-spark s3">✦</span><span class="bk-pass-spark s4">✦</span>
         <div class="bk-pass-top-label">KYUNGBOCK HIGH SCHOOL · 1921</div>
         <img src="{LOGO_SVG_DATA_URI}" class="bk-pass-emblem" alt="경복고등학교 로고">
         <div class="bk-pass-title-main">{FESTIVAL_NAME}</div>
@@ -1706,10 +1715,9 @@ def page_visitor_pass():
         </div>
         <div class="bk-pass-vdivider"></div>
         <div class="bk-pass-bottom-right">
-          <div class="bk-pass-date-label">OCTOBER</div>
+          <div class="bk-pass-date-label">OCT</div>
           <div class="bk-pass-date-num">{day_num:02d}</div>
-          <div class="bk-pass-weekday-eng">{weekday_eng} · 2026</div>
-          <div class="bk-pass-barcode"></div>
+          <div class="bk-pass-weekday-eng">{weekday_eng}</div>
         </div>
       </div>
       <div class="bk-pass-footer"><span>BUKAKJE 2026</span><span>ADMIT ONE</span></div>
@@ -2179,8 +2187,99 @@ def page_booth_add():
 def page_directions():
     st.markdown('<div class="bk-section-title">📍 오시는 길</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.4, 1])
+
     with c1:
-        st.map(data={"lat": [37.5807], "lon": [126.9701]})
+        # 중요한 위치만 표시하고, 지도 중심은 항상 경복고등학교로 잡습니다.
+        # 표시 항목: 경복고등학교 / 학교 앞 100m / 통인시장 / 경복궁역
+        school_lat = 37.5876963
+        school_lon = 126.9717003
+        station_lat = 37.575804
+        station_lon = 126.973576
+
+        # 통인시장(서울 종로구 자하문로15길 18) 위치
+        market_lat = 37.58035
+        market_lon = 126.96955
+
+        fmap = folium.Map(
+            location=[school_lat, school_lon],
+            zoom_start=14,
+            min_zoom=14,
+            max_zoom=17,
+            control_scale=False,
+            zoom_control=True,
+            tiles="OpenStreetMap",
+            width="100%",
+            height=360,
+        )
+
+        # ① 경복고등학교 — 지도 중심
+        folium.Marker(
+            [school_lat, school_lon],
+            tooltip="경복고등학교",
+            popup=folium.Popup(
+                "<b>경복고등학교</b><br>서울특별시 종로구 자하문로 17길 33",
+                max_width=280,
+            ),
+            icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
+        ).add_to(fmap)
+
+        # ② 학교 앞 100m — 학교 주변 행사 구역을 한눈에 확인
+        folium.Circle(
+            [school_lat, school_lon],
+            radius=100,
+            color="#E67E22",
+            weight=2,
+            fill=True,
+            fill_opacity=0.08,
+            tooltip="학교 앞 100m",
+        ).add_to(fmap)
+
+        folium.Marker(
+            [school_lat + 0.00055, school_lon],
+            tooltip="학교 앞 100m",
+            popup=folium.Popup("<b>학교 앞 100m</b><br>경복고등학교 기준 반경 100m", max_width=240),
+            icon=folium.Icon(color="orange", icon="info-sign"),
+        ).add_to(fmap)
+
+        # ③ 통인시장
+        folium.Marker(
+            [market_lat, market_lon],
+            tooltip="통인시장",
+            popup=folium.Popup(
+                "<b>통인시장</b><br>서울 종로구 자하문로15길 18",
+                max_width=240,
+            ),
+            icon=folium.Icon(color="green", icon="shopping-cart", prefix="fa"),
+        ).add_to(fmap)
+
+        # ④ 경복궁역
+        folium.Marker(
+            [station_lat, station_lon],
+            tooltip="경복궁역",
+            popup=folium.Popup(
+                "<b>경복궁역</b><br>3호선 · 3번 출구",
+                max_width=220,
+            ),
+            icon=folium.Icon(color="red", icon="subway", prefix="fa"),
+        ).add_to(fmap)
+
+        # 전체 범위도 경복고등학교가 시각적으로 중심이 되도록 고정합니다.
+        fmap.fit_bounds(
+            [
+                [school_lat - 0.008, school_lon - 0.006],
+                [school_lat + 0.008, school_lon + 0.006],
+            ],
+            padding=(10, 10),
+            max_zoom=14,
+        )
+
+        map_html = fmap.get_root().render()
+        map_html = map_html.replace(
+            "<body>",
+            '<body style="margin:0;padding:0;background:transparent;overflow:hidden;">'
+        )
+        components.html(map_html, height=380, scrolling=False)
+
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         st.write(f"**주소**\n\n{ss.site_info['address']}")
