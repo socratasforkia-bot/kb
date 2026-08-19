@@ -2182,25 +2182,42 @@ def page_directions():
     c1, c2 = st.columns([1.4, 1])
 
     with c1:
-        # ================================================================
-        # KAKAO ROUGHMAP - 사용자가 제공한 지도퍼가기 코드를 그대로 사용
-        # ================================================================
         kakao_map_html = """
-<!-- * 카카오맵 - 지도퍼가기 -->
-<!-- 1. 지도 노드 -->
-<div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+<div id="daumRoughmapContainer1785379777878"
+     class="root_daum_roughmap root_daum_roughmap_landing"
+     style="width:360px;height:360px;"></div>
 
-<!-- 2. 설치 스크립트 -->
-<script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
-
-<!-- 3. 실행 스크립트 -->
 <script charset="UTF-8">
-    new daum.roughmap.Lander({
-        "timestamp" : "1785379777878",
-        "key" : "s2wfzp5mbk8",
-        "mapWidth" : "360",
-        "mapHeight" : "360"
-    }).render();
+(function () {
+    function renderMap() {
+        if (window.daum && window.daum.roughmap) {
+            new daum.roughmap.Lander({
+                "timestamp": "1785379777878",
+                "key": "s2wfzp5mbk8",
+                "mapWidth": "360",
+                "mapHeight": "360"
+            }).render();
+        } else {
+            setTimeout(renderMap, 100);
+        }
+    }
+
+    var existing = document.querySelector('script[data-roughmap-loader]');
+    if (existing) {
+        renderMap();
+        return;
+    }
+
+    var script = document.createElement('script');
+    script.charset = "UTF-8";
+    script.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
+    script.setAttribute('data-roughmap-loader', 'true');
+    script.onload = renderMap;
+    script.onerror = function () {
+        console.error('카카오 로드맵 스크립트 로드 실패');
+    };
+    document.body.appendChild(script);
+})();
 </script>
 """
         components.html(kakao_map_html, height=380, width=380, scrolling=False)
