@@ -1597,82 +1597,126 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ================================================================
-    # 메인 페이지: 프로그램 / 공지사항은 반드시 '흰 박스 안'에 표시
-    # 각 목록 항목을 누르면 해당 상세 목록 페이지로 이동
-    # ================================================================
+    # ------------------------------------------------------------------
+    # 프로그램
+    # 제목은 박스 밖, 내용은 시간표/부스 정보와 같은 흰색 박스 안에 표시
+    # ------------------------------------------------------------------
+    st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
     main_programs = fetch_programs()
-    st.markdown("""
-    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
-      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">🎤 프로그램</div>
-    """, unsafe_allow_html=True)
-
+    program_rows = []
     if main_programs:
         for p in main_programs[:5]:
-            st.markdown(
-                f"""<a href="?nav={SLUG_BY_NAME['프로그램']}" target="_self" style="display:block;text-decoration:none;color:inherit;">
-                <div style="padding:13px 6px;border-top:1px solid #EEF0F5;cursor:pointer;">
-                  <div style="font-weight:800;font-size:15px;">{p['icon']} {p['name']}</div>
-                  <div style="color:{MUTED};font-size:13px;margin-top:4px;">10/30 · {p['time']} · {p['place']}</div>
-                </div></a>""",
-                unsafe_allow_html=True,
+            program_rows.append(
+                f"""
+                <a href="?nav={SLUG_BY_NAME['프로그램']}" target="_self"
+                   style="display:block;text-decoration:none;color:inherit;">
+                    <div style="padding:10px 0;border-bottom:1px solid #EEF0F5;cursor:pointer;">
+                        <div style="font-weight:800;font-size:15px;">{p['icon']} {p['name']}</div>
+                        <div style="color:{MUTED};font-size:13px;margin-top:3px;">10/30 · {p['time']} · {p['place']}</div>
+                    </div>
+                </a>
+                """
             )
     else:
-        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 프로그램이 없습니다.</div>', unsafe_allow_html=True)
-
+        program_rows.append(
+            f'<div style="padding:4px 0;color:{MUTED};font-size:13px;">등록된 프로그램이 없습니다.</div>'
+        )
+    program_rows.append(
+        f"""
+        <a href="?nav={SLUG_BY_NAME['프로그램']}" target="_self"
+           style="display:block;text-decoration:none;color:inherit;margin-top:8px;">
+            <div style="padding-top:8px;color:#E87916;font-size:13px;font-weight:700;">전체 프로그램 보기 →</div>
+        </a>
+        """
+    )
     st.markdown(
-        f'<a href="?nav={SLUG_BY_NAME["프로그램"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 프로그램 보기 →</a></div>',
+        '<div class="bk-card">' + ''.join(program_rows) + '</div>',
         unsafe_allow_html=True,
     )
 
-    # 시간표도 기존처럼 흰 박스 안에 유지
+    # ------------------------------------------------------------------
+    # 시간표
+    # ------------------------------------------------------------------
+    st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
     grouped_main = fetch_schedule_by_day()
-    st.markdown("""
-    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
-      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">📅 시간표</div>
-    """, unsafe_allow_html=True)
+    schedule_rows = []
     if grouped_main:
         first_day = list(grouped_main.keys())[0]
         for it in grouped_main[first_day][:4]:
-            st.markdown(
-                f"<div style='padding:10px 6px;border-top:1px solid #EEF0F5;font-size:13px;'><b>{it['time']}</b>&nbsp;&nbsp;{it['program']} <span style='color:{MUTED};'>({it['place']})</span></div>",
-                unsafe_allow_html=True,
+            schedule_rows.append(
+                f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
+                f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
+                f"<span style='color:{MUTED};'>({it['place']})</span></div>"
             )
     else:
-        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 시간표가 없습니다.</div>', unsafe_allow_html=True)
+        schedule_rows.append(
+            f'<div style="color:{MUTED};font-size:13px;">등록된 시간표가 없습니다.</div>'
+        )
+    schedule_rows.append(
+        f"<a href='?nav={SLUG_BY_NAME['시간표']}' target='_self' "
+        f"style='display:block;text-decoration:none;color:#E87916;font-size:13px;font-weight:700;margin-top:8px;'>"
+        f"전체 시간표 보기 →</a>"
+    )
     st.markdown(
-        f'<a href="?nav={SLUG_BY_NAME["시간표"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 시간표 보기 →</a></div>',
+        '<div class="bk-card">' + ''.join(schedule_rows) + '</div>',
         unsafe_allow_html=True,
     )
 
-    # 공지사항: NEW가 먼저 나오도록 fetch 결과에서 정렬
+    # ------------------------------------------------------------------
+    # 공지사항
+    # 제목 + 작성한 내용까지 흰색 박스 안에 표시
+    # NEW가 먼저 표시되며, 등록 후 3시간이 지나면 NEW 배지만 자동으로 사라짐
+    # ------------------------------------------------------------------
+    st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
     main_notices = fetch_notices("member" if current_user() is not None else "public")
-    main_notices = sorted(main_notices, key=lambda n: (not bool(n.get("new")), n.get("date") or ""))
-    st.markdown("""
-    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
-      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">📢 공지사항</div>
-    """, unsafe_allow_html=True)
-
+    # fetch_notices()에서 3시간 이내의 is_new만 new=True로 변환하므로
+    # 여기서는 NEW 공지를 먼저, 나머지는 최신순으로 표시합니다.
+    main_notices = sorted(
+        main_notices,
+        key=lambda n: (not bool(n.get("new")), n.get("created_at") or ""),
+    )
+    notice_rows = []
     if main_notices:
         for n in main_notices[:5]:
-            badge = '<span class="bk-badge-new" style="margin-left:7px;">NEW</span>' if n.get("new") else ""
-            st.markdown(
-                f"""<a href="?nav={SLUG_BY_NAME['공지사항']}" target="_self" style="display:block;text-decoration:none;color:inherit;">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 6px;border-top:1px solid #EEF0F5;cursor:pointer;">
-                  <div style="font-weight:800;">{n['title']}{badge}</div>
-                  <div style="color:{MUTED};font-size:12px;white-space:nowrap;margin-left:10px;">{n['date']}</div>
-                </div></a>""",
-                unsafe_allow_html=True,
+            badge = " <span class='bk-badge-new'>NEW</span>" if n.get("new") else ""
+            title = str(n.get("title") or "")
+            content = str(n.get("content") or "").strip()
+            # 메인에서는 공지 내용을 그대로 흰색 박스 안에 보여주되,
+            # 너무 긴 글은 미리보기로 줄여 전체 화면이 길어지는 것을 막습니다.
+            preview = content.replace("\n", " ")
+            if len(preview) > 180:
+                preview = preview[:180].rstrip() + "…"
+            notice_rows.append(
+                f"""
+                <a href="?nav={SLUG_BY_NAME['공지사항']}" target="_self"
+                   style="display:block;text-decoration:none;color:inherit;">
+                    <div style="padding:10px 0;border-bottom:1px solid #EEF0F5;cursor:pointer;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                            <div style="font-weight:800;font-size:15px;">{title}{badge}</div>
+                            <div style="color:{MUTED};font-size:12px;white-space:nowrap;">{n.get('date') or ''}</div>
+                        </div>
+                        <div style="color:{MUTED};font-size:13px;line-height:1.6;margin-top:5px;">{preview or '내용이 없습니다.'}</div>
+                    </div>
+                </a>
+                """
             )
     else:
-        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 공지사항이 없습니다.</div>', unsafe_allow_html=True)
-
+        notice_rows.append(
+            f'<div style="padding:4px 0;color:{MUTED};font-size:13px;">등록된 공지사항이 없습니다.</div>'
+        )
+    notice_rows.append(
+        f"<a href='?nav={SLUG_BY_NAME['공지사항']}' target='_self' "
+        f"style='display:block;text-decoration:none;color:#E87916;font-size:13px;font-weight:700;margin-top:8px;'>"
+        f"전체 공지사항 보기 →</a>"
+    )
     st.markdown(
-        f'<a href="?nav={SLUG_BY_NAME["공지사항"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 공지사항 보기 →</a></div>',
+        '<div class="bk-card">' + ''.join(notice_rows) + '</div>',
         unsafe_allow_html=True,
     )
 
-    # 부스 정보
+    # ------------------------------------------------------------------
+    # 부스 정보 - 기존 디자인 유지
+    # ------------------------------------------------------------------
     st.markdown('<div class="bk-section-title">🏪 부스 정보</div>', unsafe_allow_html=True)
     main_booths = fetch_booths()
     if not main_booths:
@@ -1692,10 +1736,10 @@ def page_main():
                     """, unsafe_allow_html=True,
                 )
     if st.button("더 많은 부스 보기 →", key="btn-booths"):
-        go("부스 정보"); st.rerun()
+        go("부스 정보")
+        st.rerun()
 
     render_footer()
-
 
 # ----------------------------------------------------------------------
 # 페이지 : 디지털 방문증 (사이드바 전용)
@@ -2238,24 +2282,7 @@ def page_directions():
             icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
         ).add_to(fmap)
 
-        # ② 학교 앞 100m — 학교 주변 행사 구역을 한눈에 확인
-        folium.Circle(
-            [school_lat, school_lon],
-            radius=100,
-            color="#E67E22",
-            weight=2,
-            fill=True,
-            fill_opacity=0.08,
-            tooltip="학교 앞 100m",
-        ).add_to(fmap)
-
-        folium.Marker(
-            [school_lat + 0.00055, school_lon],
-            tooltip="학교 앞 100m",
-            popup=folium.Popup("<b>학교 앞 100m</b><br>경복고등학교 기준 반경 100m", max_width=240),
-            icon=folium.Icon(color="orange", icon="info-sign"),
-        ).add_to(fmap)
-
+        # ② 학교 앞 위치 표시 — 반경 원은 표시하지 않습니다.
         # ③ 통인시장
         folium.Marker(
             [market_lat, market_lon],
