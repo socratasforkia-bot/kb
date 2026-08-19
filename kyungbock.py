@@ -123,8 +123,7 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
         on visits for select using (true);
 ----------------------------------------------------------------------
 
-[수정 사항 11 - 프로그램/시간표를 관리자가 추가·수정·삭제 가능하도록 변경 +
-                사이드바 전용 "프로그램 구성" 메뉴 추가]
+[수정 사항 11 - 프로그램/시간표를 관리자가 추가·수정·삭제 가능하도록 변경]
 기존에는 프로그램(programs)과 시간표(schedule)가 st.session_state에만 저장되는
 데모용 인메모리 데이터였습니다. 그래서 관리자가 수정할 방법이 없었고, 서버가
 재시작되면 초기화되었습니다.
@@ -1424,19 +1423,14 @@ def logout():
 # 상단바 + 우측 슬라이드 드로어(햄버거 메뉴)
 # ----------------------------------------------------------------------
 PUBLIC_PAGES = [
-    ("메인", "🏠", "home"), ("축제 안내", "🎉", "intro"), ("프로그램", "🎤", "programs"),
+    ("메인", "🏠", "home"), ("프로그램", "🎤", "programs"),
     ("시간표", "📅", "schedule"), ("부스 정보", "🏪", "booths"), ("랜덤 추천", "🎲", "random"),
     ("오시는 길", "📍", "directions"), ("공지사항", "📢", "notices"), ("FAQ", "❓", "faq"),
 ]
 
 # 사이드바(드로어) 메뉴에만 노출되는 페이지들.
-#   - "인사말": 별도 페이지
-#   - "프로그램 구성": 요청에 따라 사이드바에만 노출. 실제로는 기존 "프로그램"
-#     페이지로 연결됩니다(그 페이지 안에서 관리자는 등록/수정/삭제,
-#     일반 방문자는 조회를 할 수 있습니다).
 DRAWER_ONLY_PAGES = [
     ("인사말", "💌", "greeting"),
-    ("프로그램 구성", "🗂️", "program_manage"),
 ]
 
 SLUG_BY_NAME = {name: slug for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAGES}
@@ -1445,7 +1439,6 @@ NAV_SLUGS = {slug: name for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAG
 NAV_SLUGS.update({"login": "로그인", "mypage": "마이페이지", "admin": "관리자 페이지",
                    "booth_add": "부스 등록", "notice_add": "공지사항 등록",
                    "program_add": "프로그램 등록", "schedule_add": "시간표 등록",
-                   "program_manage": "프로그램",  # 사이드바 '프로그램 구성' → 프로그램 페이지로 연결
                    "logout": "__logout__"})
 
 
@@ -1551,16 +1544,16 @@ def page_main():
         st.markdown(
             f"""
             <div class="bk-card">
-                <h4>🎉 축제 안내</h4>
+                <h4>🎤 프로그램</h4>
                 <div style="height:110px;border-radius:12px;margin-bottom:10px;
                             background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
                             display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
-                    🏫
+                    🎤
                 </div>
                 <div style="color:{MUTED};font-size:13px;">
-                    북악제 소개, 일정, 장소 등 모든 정보를 확인할 수 있습니다.
+                    공연, 체험, 전시 등 북악제의 다양한 프로그램을 확인할 수 있습니다.
                 </div>
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['축제 안내']}" target="_self">자세히 보기 →</a>
+                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">프로그램 보기 →</a>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1628,38 +1621,6 @@ def page_main():
 
 
 # ----------------------------------------------------------------------
-# 페이지 : 축제 안내
-# ----------------------------------------------------------------------
-def page_intro():
-    st.markdown('<div class="bk-section-title">🎉 축제 안내</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div style="height:160px;border-radius:12px;margin-bottom:16px;
-                    background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
-                    display:flex;align-items:center;justify-content:center;color:white;font-size:52px;">
-            🏫
-        </div>
-        """, unsafe_allow_html=True,
-    )
-    st.markdown(f"""
-**북악제 소개**
-경복고등학교의 대표 축제인 **{FESTIVAL_NAME}**는 학생들이 직접 기획하고 준비하는
-공연, 체험, 전시가 어우러진 종합 축제입니다.
-
-**축제 일정**  {FESTIVAL_DATE.strftime('%Y년 %m월 %d일')}
-
-**축제 장소**  경복고등학교 전 교내 (운동장, 체육관, 본관 등)
-
-**주요 행사**  개막식·폐막식 · 동아리 공연 및 발표회 · 학급/동아리 체험 부스 · 학생 작품 전시
-
-**문의처**  {ss.site_info['phone']}
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
-    render_footer()
-
-
-# ----------------------------------------------------------------------
 # 페이지 : 인사말 (사이드바 전용)
 # ----------------------------------------------------------------------
 def page_greeting():
@@ -1709,7 +1670,7 @@ def page_greeting():
 
 
 # ----------------------------------------------------------------------
-# 페이지 : 프로그램 (사이드바 "프로그램 구성"에서도 이 페이지로 연결됩니다)
+# 페이지 : 프로그램
 # ----------------------------------------------------------------------
 def page_programs():
     st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
@@ -2693,7 +2654,7 @@ def main():
     render_topbar_and_drawer()
 
     routes = {
-        "메인": page_main, "축제 안내": page_intro, "프로그램": page_programs,
+        "메인": page_main, "프로그램": page_programs,
         "시간표": page_schedule, "부스 정보": page_booths, "오시는 길": page_directions,
         "공지사항": page_notices, "FAQ": page_faq, "랜덤 추천": page_random, "인사말": page_greeting,
         "로그인": page_login, "마이페이지": page_mypage, "관리자 페이지": page_admin,
