@@ -355,6 +355,22 @@ def save_auth_cookies(session):
         pass
 
 
+def save_guest_pass_name(name: str):
+    """비회원 방문증 이름을 이 기기(브라우저)의 쿠키에 저장합니다."""
+    try:
+        cookies["guest_pass_name"] = name
+        cookies.save()
+    except Exception:
+        pass
+
+
+def get_guest_pass_name() -> str:
+    try:
+        return cookies.get("guest_pass_name") or ""
+    except Exception:
+        return ""
+
+
 def clear_auth_cookies():
     try:
         cookies["sb_access_token"] = ""
@@ -737,6 +753,151 @@ hr {{border-color: #E5E7EF;}}
     align-items: center;
     justify-content: center;
     font-size: 18px;
+}}
+
+/* ---------------- 디지털 방문증 (티켓형) ---------------- */
+.bk-pass-wrap {{
+    max-width: 420px;
+    margin: 0 auto 18px auto;
+}}
+.bk-pass-card {{
+    position: relative;
+    border-radius: 26px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(15,31,61,0.22);
+}}
+.bk-pass-top {{
+    position: relative;
+    background:
+        radial-gradient(circle at 14% 12%, rgba(255,255,255,0.06) 0, rgba(255,255,255,0) 40%),
+        linear-gradient(160deg, {NAVY} 0%, {NAVY_2} 100%);
+    padding: 34px 24px 30px 24px;
+    text-align: center;
+    color: #fff;
+}}
+.bk-pass-eyebrow {{
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 14px;
+}}
+.bk-pass-emblem-ring {{
+    width: 108px;
+    height: 108px;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px auto;
+    background: rgba(255,255,255,0.03);
+}}
+.bk-pass-emblem-ring img {{
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+}}
+.bk-pass-title-main {{
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin: 4px 0 16px 0;
+}}
+.bk-pass-deco-row {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: rgba(255,255,255,0.5);
+}}
+.bk-pass-deco-row .bk-pass-deco-line {{
+    height: 1px;
+    width: 70px;
+    background: rgba(255,255,255,0.28);
+}}
+.bk-pass-perforation {{
+    position: relative;
+    border-top: 2px dashed #D8DCE6;
+}}
+.bk-pass-perforation::before,
+.bk-pass-perforation::after {{
+    content: "";
+    position: absolute;
+    top: -13px;
+    width: 26px;
+    height: 26px;
+    background: {BG};
+    border-radius: 50%;
+}}
+.bk-pass-perforation::before {{ left: -13px; }}
+.bk-pass-perforation::after {{ right: -13px; }}
+.bk-pass-bottom {{
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    padding: 22px 24px;
+    background: #fff;
+}}
+.bk-pass-bottom-left {{
+    flex: 1;
+    min-width: 0;
+}}
+.bk-pass-bl-title {{
+    font-size: 21px;
+    font-weight: 900;
+    color: {NAVY};
+    margin-bottom: 10px;
+}}
+.bk-pass-meta-row {{
+    font-size: 13px;
+    color: {TEXT};
+    margin-bottom: 5px;
+}}
+.bk-pass-name-box {{
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed #E3E6EE;
+    font-size: 14px;
+    font-weight: 700;
+    color: {NAVY};
+}}
+.bk-pass-name-box.empty {{
+    color: #9CA3AF;
+    font-weight: 500;
+    font-size: 13px;
+}}
+.bk-pass-vdivider {{
+    width: 1px;
+    background: repeating-linear-gradient(to bottom, #E3E6EE 0, #E3E6EE 5px, transparent 5px, transparent 10px);
+}}
+.bk-pass-bottom-right {{
+    min-width: 78px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}}
+.bk-pass-date-num {{
+    font-size: 30px;
+    font-weight: 900;
+    color: {NAVY};
+    line-height: 1.15;
+}}
+.bk-pass-date-num.month {{
+    padding-bottom: 4px;
+    border-bottom: 2px solid {NAVY};
+    margin-bottom: 4px;
+}}
+.bk-pass-weekday-eng {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: {MUTED};
+    margin-top: 6px;
+    line-height: 1.5;
 }}
 </style>
 """
@@ -1430,6 +1591,7 @@ PUBLIC_PAGES = [
 
 # 사이드바(드로어) 메뉴에만 노출되는 페이지들.
 DRAWER_ONLY_PAGES = [
+    ("디지털 방문증", "🎫", "pass"),
     ("인사말", "💌", "greeting"),
 ]
 
@@ -1616,6 +1778,111 @@ def page_main():
                 )
     if st.button("더 많은 부스 보기 →", key="btn-booths"):
         go("부스 정보"); st.rerun()
+
+    render_footer()
+
+
+# ----------------------------------------------------------------------
+# 페이지 : 디지털 방문증 (사이드바 전용)
+#  - 회원: 로그인한 회원의 이름을 자동으로 표시합니다.
+#  - 비회원: 이름을 직접 입력하면 이 기기(브라우저)의 쿠키에 저장되어,
+#            같은 폰/브라우저로 다시 접속해도 입력했던 이름이 유지됩니다.
+# ----------------------------------------------------------------------
+def page_visitor_pass():
+    st.markdown('<div class="bk-section-title">🎫 디지털 방문증</div>', unsafe_allow_html=True)
+
+    user = current_user()
+    is_member = user is not None
+
+    if is_member:
+        visitor_name = user["name"]
+    else:
+        visitor_name = get_guest_pass_name()
+
+    date_str = FESTIVAL_DATE.strftime("%Y. %m. %d")
+    weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][FESTIVAL_DATE.weekday()]
+    month_num = FESTIVAL_DATE.month
+    day_num = FESTIVAL_DATE.day
+    weekday_eng = FESTIVAL_DATE.strftime("%a").upper()  # 예: FRI
+
+    if visitor_name:
+        name_html = f'<div class="bk-pass-name-box">👤 {visitor_name}{"" if is_member else " (비회원)"}</div>'
+    else:
+        name_html = '<div class="bk-pass-name-box empty">👤 아래에서 이름을 입력하면 방문증에 표시됩니다</div>'
+
+    st.markdown(
+        f"""
+        <div class="bk-pass-wrap">
+            <div class="bk-pass-card">
+                <div class="bk-pass-top">
+                    <div class="bk-pass-eyebrow">DIGITAL VISITOR PASS</div>
+                    <div class="bk-pass-emblem-ring">
+                        <img src="{LOGO_DATA_URI}" alt="경복고등학교 로고">
+                    </div>
+                    <div class="bk-pass-title-main">{FESTIVAL_NAME}</div>
+                    <div class="bk-pass-deco-row">
+                        <span class="bk-pass-deco-line"></span>
+                        <span>✦</span>
+                        <span class="bk-pass-deco-line"></span>
+                    </div>
+                </div>
+                <div class="bk-pass-perforation"></div>
+                <div class="bk-pass-bottom">
+                    <div class="bk-pass-bottom-left">
+                        <div class="bk-pass-bl-title">{FESTIVAL_NAME}</div>
+                        <div class="bk-pass-meta-row">📅&nbsp; {date_str} ({weekday_kr})</div>
+                        <div class="bk-pass-meta-row">📍&nbsp; 경복고등학교 교내</div>
+                        {name_html}
+                    </div>
+                    <div class="bk-pass-vdivider"></div>
+                    <div class="bk-pass-bottom-right">
+                        <div class="bk-pass-date-num month">{month_num}</div>
+                        <div class="bk-pass-date-num">{day_num}</div>
+                        <div class="bk-pass-weekday-eng">{"<br>".join(list(weekday_eng))}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if is_member:
+        st.caption("✅ 회원 정보로 로그인되어 있어 이름이 자동으로 표시됩니다.")
+    else:
+        st.markdown('<div class="bk-card">', unsafe_allow_html=True)
+        st.write("**비회원 이름 등록**")
+        st.markdown(
+            f"<div style='color:{MUTED};font-size:13px;margin-bottom:10px;'>"
+            "이름을 입력하고 저장하면, 이 기기(브라우저)에서는 다음에 다시 방문해도 "
+            "같은 이름으로 방문증이 표시됩니다. 로그인 없이도 이용할 수 있어요.</div>",
+            unsafe_allow_html=True,
+        )
+        with st.form("guest_pass_name_form", clear_on_submit=False):
+            guest_input = st.text_input(
+                "이름", value=visitor_name, placeholder="예: 홍길동", max_chars=20,
+                label_visibility="collapsed",
+            )
+            submitted = st.form_submit_button("💾 이 이름으로 저장하기", use_container_width=True)
+        if submitted:
+            clean_name = guest_input.strip()
+            if not clean_name:
+                st.error("이름을 입력해주세요.")
+            else:
+                save_guest_pass_name(clean_name)
+                st.success(f"'{clean_name}' 님의 이름으로 방문증에 저장했습니다.")
+                st.rerun()
+
+        if visitor_name:
+            if st.button("🗑️ 저장된 이름 지우기", use_container_width=True):
+                save_guest_pass_name("")
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='color:{MUTED};font-size:12px;margin-top:8px;'>"
+            "💡 회원으로 로그인하면 이름을 매번 입력할 필요 없이 자동으로 표시됩니다.</div>",
+            unsafe_allow_html=True,
+        )
 
     render_footer()
 
@@ -2657,6 +2924,7 @@ def main():
         "메인": page_main, "프로그램": page_programs,
         "시간표": page_schedule, "부스 정보": page_booths, "오시는 길": page_directions,
         "공지사항": page_notices, "FAQ": page_faq, "랜덤 추천": page_random, "인사말": page_greeting,
+        "디지털 방문증": page_visitor_pass,
         "로그인": page_login, "마이페이지": page_mypage, "관리자 페이지": page_admin,
         "부스 등록": page_booth_add, "공지사항 등록": page_notice_add,
         "프로그램 등록": page_program_add, "시간표 등록": page_schedule_add,
