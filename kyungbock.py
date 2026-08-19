@@ -1839,7 +1839,7 @@ def page_visitor_pass():
     else:
         name_html = '<div class="bk-pass-name-box empty">👤 아래에서 이름을 입력하면 방문증에 표시됩니다</div>'
 
-       corner_svg = """
+    corner_svg = """
     <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="0" width="12" height="12" fill="#5D7FBE"/>
         <rect x="0" y="12" width="12" height="12" fill="#5D7FBE"/>
