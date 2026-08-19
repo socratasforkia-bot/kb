@@ -1586,50 +1586,47 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="bk-section-title">주요 메뉴</div>', unsafe_allow_html=True)
-    c1, c3 = st.columns(2)
-
-    with c1:
-        st.markdown(
-            f"""
-            <div class="bk-card">
-                <h4>🎤 프로그램</h4>
-                <div style="height:110px;border-radius:12px;margin-bottom:10px;
-                            background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
-                            display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
-                    🎤
-                </div>
-                <div style="color:{MUTED};font-size:13px;">
-                    공연, 체험, 전시 등 북악제의 다양한 프로그램을 확인할 수 있습니다.
-                </div>
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">프로그램 보기 →</a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with c3:
-        grouped_main = fetch_schedule_by_day()
-        if grouped_main:
-            first_day = list(grouped_main.keys())[0]
-            schedule_items_html = "".join(
-                f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
-                f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
-                f"<span style='color:{MUTED};'>({it['place']})</span></div>"
-                for it in grouped_main[first_day][:4]
+    # 프로그램은 기본적으로 메인 페이지에 표시하지 않습니다.
+    # 관리자가 프로그램을 등록했을 때만 등록된 내용이 메인에 나타납니다.
+    main_programs = fetch_programs()
+    if main_programs:
+        st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
+        st.markdown('<div class="bk-card">', unsafe_allow_html=True)
+        for p in main_programs[:4]:
+            st.markdown(
+                f"<div style='padding:8px 0;border-bottom:1px solid #EEF0F5;'>"
+                f"<b>{p['icon']} {p['name']}</b> "
+                f"<span style='color:{MUTED};font-size:13px;'>· {p['date']} {p['time']} · {p['place']}</span></div>",
+                unsafe_allow_html=True,
             )
-        else:
-            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
         st.markdown(
-            f"""
-            <div class="bk-card">
-                <h4>📅 시간표</h4>
-                {schedule_items_html}
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
-            </div>
-            """,
+            f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
             unsafe_allow_html=True,
         )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # 시간표도 DB에 등록된 내용만 표시합니다.
+    st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
+    grouped_main = fetch_schedule_by_day()
+    if grouped_main:
+        first_day = list(grouped_main.keys())[0]
+        schedule_items_html = "".join(
+            f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
+            f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
+            f"<span style='color:{MUTED};'>({it['place']})</span></div>"
+            for it in grouped_main[first_day][:4]
+        )
+    else:
+        schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
+    st.markdown(
+        f"""
+        <div class="bk-card">
+            {schedule_items_html}
+            <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
@@ -2183,54 +2180,54 @@ def page_directions():
     c1, c2 = st.columns([1.4, 1])
 
     with c1:
-        # 카카오 RoughMap 대신 Folium 지도를 사용합니다.
-        # 경복고등학교 좌표를 중심으로 표시하고 학교 위치에 마커를 찍습니다.
+        # 중요한 위치만 보여주는 간결한 지도입니다.
+        # 축소는 경복궁역이 보이는 범위까지만 허용합니다.
         school_lat = 37.5876963
         school_lon = 126.9717003
+        station_lat = 37.575804
+        station_lon = 126.973576
 
         fmap = folium.Map(
-            location=[school_lat, school_lon],
-            zoom_start=17,
-            control_scale=True,
-            tiles=None,
+            location=[(school_lat + station_lat) / 2, (school_lon + station_lon) / 2],
+            zoom_start=15,
+            min_zoom=15,
+            max_zoom=17,
+            control_scale=False,
+            zoom_control=True,
+            tiles="OpenStreetMap",
             width="100%",
             height=360,
         )
 
-        # 한국어 지명이 표시되는 OpenStreetMap 지도를 기본으로 사용합니다.
-        folium.TileLayer(
-            tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            name="한국어 지도",
-            attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            control=True,
-        ).add_to(fmap)
-
-        # 경복고등학교를 지도 중심에 정확하게 표시합니다.
+        # 핵심 정보 ① 경복고등학교
         folium.Marker(
             [school_lat, school_lon],
             tooltip="경복고등학교",
             popup=folium.Popup(
-                "<b>경복고등학교</b><br>서울특별시 종로구 자하문로28가길 9",
+                "<b>경복고등학교</b><br>서울특별시 종로구 자하문로 17길 33",
                 max_width=280,
             ),
             icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
         ).add_to(fmap)
 
-        # 학교 주변을 한눈에 알아보기 쉽도록 원형으로 강조합니다.
-        folium.Circle(
-            location=[school_lat, school_lon],
-            radius=180,
-            color="#1769aa",
-            weight=2,
-            fill=True,
-            fill_color="#1769aa",
-            fill_opacity=0.08,
-            tooltip="경복고등학교 주변",
+        # 핵심 정보 ② 경복궁역
+        folium.Marker(
+            [station_lat, station_lon],
+            tooltip="경복궁역",
+            popup=folium.Popup(
+                "<b>경복궁역</b><br>3호선 · 3번 출구",
+                max_width=220,
+            ),
+            icon=folium.Icon(color="red", icon="subway", prefix="fa"),
         ).add_to(fmap)
 
-        folium.LayerControl(collapsed=True).add_to(fmap)
+        # 학교와 경복궁역이 함께 보이는 범위로 고정하고 불필요한 주변 표시를 최소화합니다.
+        fmap.fit_bounds(
+            [[station_lat, station_lon], [school_lat, school_lon]],
+            padding=(20, 20),
+            max_zoom=15,
+        )
 
-        # 지도 주변을 보기 좋게 둥근 카드 형태로 표시합니다.
         map_html = fmap.get_root().render()
         map_html = map_html.replace(
             "<body>",
