@@ -4,3 +4,5 @@ streamlit-cookies-manager
 python-dotenv
 pandas
 Pillow
+folium
+streamlit-folium
