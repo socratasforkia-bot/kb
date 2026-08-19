@@ -2180,30 +2180,64 @@ def page_booth_add():
 def page_directions():
     st.markdown('<div class="bk-section-title">📍 오시는 길</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.4, 1])
+
     with c1:
-        kakao_html = r'''\
+        # 카카오맵 "지도퍼가기" 원본 코드를 그대로 실행합니다.
+        # roughmapLoader.js는 동적으로 주입하지 않고 HTML 문서 안에서
+        # 정적으로 먼저 로드한 뒤 Lander를 실행해야 합니다.
+        kakao_map_html = r"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body { margin:0; padding:0; background:transparent; }
+#daumRoughmapContainer1785379777878 {
+    width:360px !important;
+    height:360px !important;
+    max-width:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+}
+</style>
+</head>
+<body>
 <!-- * 카카오맵 - 지도퍼가기 -->
+<!-- 1. 지도 노드 -->
 <div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+
+<!-- 2. 설치 스크립트 -->
 <script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
+
+<!-- 3. 실행 스크립트 -->
 <script charset="UTF-8">
-(function() {
-    function renderKakaoMap() {
+    function renderKakaoRoughMap() {
         if (window.daum && window.daum.roughmap && window.daum.roughmap.Lander) {
-            new daum.roughmap.Lander({
-                "timestamp" : "1785379777878",
-                "key" : "s2wfzp5mbk8",
-                "mapWidth" : "360",
-                "mapHeight" : "360"
-            }).render();
-        } else {
-            setTimeout(renderKakaoMap, 200);
+            try {
+                new daum.roughmap.Lander({
+                    "timestamp" : "1785379777878",
+                    "key" : "s2wfzp5mbk8",
+                    "mapWidth" : "360",
+                    "mapHeight" : "360"
+                }).render();
+                return;
+            } catch (e) {
+                console.error("Kakao RoughMap render error:", e);
+            }
         }
+        setTimeout(renderKakaoRoughMap, 100);
     }
-    renderKakaoMap();
-})();
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", renderKakaoRoughMap);
+    } else {
+        renderKakaoRoughMap();
+    }
 </script>
-'''
-        components.html(kakao_html, height=390, scrolling=False)
+</body>
+</html>"""
+        components.html(kakao_map_html, height=380, width=380, scrolling=False)
+
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         st.write(f"**주소**\n\n{ss.site_info['address']}")
