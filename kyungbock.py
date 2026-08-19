@@ -2180,48 +2180,20 @@ def page_booth_add():
 def page_directions():
     st.markdown('<div class="bk-section-title">📍 오시는 길</div>', unsafe_allow_html=True)
     c1, c2 = st.columns([1.4, 1])
-
     with c1:
-        kakao_map_html = """
-<div id="daumRoughmapContainer1785379777878"
-     class="root_daum_roughmap root_daum_roughmap_landing"
-     style="width:360px;height:360px;"></div>
-
+        components.html("""
+<!-- * 카카오맵 - 지도퍼가기 -->
+<div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+<script charset="UTF-8" class="daum_roughmap_loader_script" src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
 <script charset="UTF-8">
-(function () {
-    function renderMap() {
-        if (window.daum && window.daum.roughmap) {
-            new daum.roughmap.Lander({
-                "timestamp": "1785379777878",
-                "key": "s2wfzp5mbk8",
-                "mapWidth": "360",
-                "mapHeight": "360"
-            }).render();
-        } else {
-            setTimeout(renderMap, 100);
-        }
-    }
-
-    var existing = document.querySelector('script[data-roughmap-loader]');
-    if (existing) {
-        renderMap();
-        return;
-    }
-
-    var script = document.createElement('script');
-    script.charset = "UTF-8";
-    script.src = "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js";
-    script.setAttribute('data-roughmap-loader', 'true');
-    script.onload = renderMap;
-    script.onerror = function () {
-        console.error('카카오 로드맵 스크립트 로드 실패');
-    };
-    document.body.appendChild(script);
-})();
+    new daum.roughmap.Lander({
+        "timestamp" : "1785379777878",
+        "key" : "s2wfzp5mbk8",
+        "mapWidth" : "360",
+        "mapHeight" : "360"
+    }).render();
 </script>
-"""
-        components.html(kakao_map_html, height=380, width=380, scrolling=False)
-
+""", height=390)
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         st.write(f"**주소**\n\n{ss.site_info['address']}")
