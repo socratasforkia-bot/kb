@@ -759,33 +759,40 @@ hr {{border-color: #E5E7EF;}}
 }}
 
 /* ---------------- 디지털 방문증 (프리미엄 티켓형) ---------------- */
-.bk-pass-wrap {{ width:100%; max-width:520px; margin:0 auto 20px; }}
-.bk-pass-card {{ position:relative; overflow:hidden; border-radius:24px; background:#fff; border:1px solid #D9DEE8; box-shadow:0 18px 45px rgba(15,31,61,.16); }}
-.bk-pass-top {{ position:relative; padding:30px 28px 25px; text-align:center; background:linear-gradient(180deg,#fff 0%,#F7F9FC 100%); border-bottom:1px solid #E1E5EC; }}
-.bk-pass-top::before {{ content:""; position:absolute; inset:10px; border:1px solid rgba(11,99,167,.16); border-radius:16px; pointer-events:none; }}
-.bk-pass-top-label {{ position:relative; z-index:2; font-size:10px; font-weight:800; letter-spacing:2px; color:#7A8495; margin-bottom:10px; }}
-.bk-pass-emblem {{ width:136px; height:136px; object-fit:contain; display:block; margin:0 auto 8px; position:relative; z-index:2; }}
-.bk-pass-title-main {{ position:relative; z-index:2; font-family:'Nanum Myeongjo','Noto Sans KR',serif; font-size:44px; line-height:1; font-weight:900; letter-spacing:8px; text-indent:8px; color:#0B63A7; margin:3px 0 10px; }}
-.bk-pass-subtitle {{ position:relative; z-index:2; font-size:11px; font-weight:800; letter-spacing:2px; color:#667085; }}
-.bk-pass-rule {{ position:relative; z-index:2; display:flex; align-items:center; gap:9px; width:75%; margin:15px auto 0; color:#C59642; }}
-.bk-pass-rule span {{ flex:1; height:1px; background:#D9C28D; }} .bk-pass-rule b {{ font-size:12px; }}
-.bk-pass-perforation {{ position:relative; height:1px; border-top:2px dashed #D9DEE8; margin:0 20px; }}
-.bk-pass-perforation::before,.bk-pass-perforation::after {{ content:""; position:absolute; top:-14px; width:27px; height:27px; background:{BG}; border-radius:50%; }}
-.bk-pass-perforation::before {{ left:-34px; }} .bk-pass-perforation::after {{ right:-34px; }}
-.bk-pass-bottom {{ display:grid; grid-template-columns:1fr 1px 92px; gap:18px; padding:24px 27px 22px; background:#fff; }}
-.bk-pass-bottom-left {{ min-width:0; }} .bk-pass-bl-title {{ color:#0B63A7; font-size:15px; font-weight:900; letter-spacing:1px; margin-bottom:14px; }}
-.bk-pass-meta-row {{ color:#475467; font-size:13px; line-height:1.55; margin-bottom:6px; }}
-.bk-pass-name-label {{ margin-top:13px; font-size:10px; font-weight:900; letter-spacing:1.5px; color:#98A2B3; }}
-.bk-pass-name-box {{ margin:4px 0 10px; padding:5px 0 8px; border-bottom:2px solid #0B63A7; font-size:20px; font-weight:900; color:#0F1F3D; word-break:keep-all; }}
+.bk-pass-wrap {{ width:100%; max-width:560px; margin:0 auto 24px; }}
+.bk-pass-card {{ position:relative; overflow:hidden; border-radius:28px; background:#fff; border:1px solid #D8DEE9; box-shadow:0 20px 55px rgba(15,31,61,.18); }}
+.bk-pass-card::before {{ content:""; position:absolute; inset:8px; border:1px solid rgba(197,150,66,.28); border-radius:22px; pointer-events:none; z-index:5; }}
+.bk-pass-card::after {{ content:"✦  BUKAKJE 2026  ✦"; position:absolute; top:16px; right:24px; color:rgba(255,255,255,.65); font-size:8px; font-weight:900; letter-spacing:1.8px; z-index:6; pointer-events:none; }}
+.bk-pass-top {{ position:relative; padding:42px 30px 28px; text-align:center; background:linear-gradient(145deg,#0F1F3D 0%,#123A63 55%,#0B63A7 100%); border-bottom:1px solid #D9DEE8; overflow:hidden; }}
+.bk-pass-top::before {{ content:""; position:absolute; width:280px; height:280px; border:1px solid rgba(255,255,255,.12); border-radius:50%; left:-145px; top:-150px; pointer-events:none; }}
+.bk-pass-top::after {{ content:""; position:absolute; width:220px; height:220px; border:1px solid rgba(197,150,66,.22); border-radius:50%; right:-115px; bottom:-130px; pointer-events:none; }}
+.bk-pass-top-label {{ position:relative; z-index:2; display:inline-block; padding:6px 12px; border:1px solid rgba(255,255,255,.22); border-radius:999px; background:rgba(255,255,255,.08); font-size:9px; font-weight:900; letter-spacing:2px; color:#F4E5C0; margin-bottom:16px; }}
+.bk-pass-emblem {{ width:136px; height:136px; object-fit:contain; display:block; margin:0 auto 12px; position:relative; z-index:2; }}
+.bk-pass-title-main {{ position:relative; z-index:2; font-family:'Nanum Myeongjo','Noto Sans KR',serif; font-size:44px; line-height:1; font-weight:900; letter-spacing:8px; text-indent:8px; color:#fff; margin:4px 0 11px; text-shadow:0 2px 10px rgba(0,0,0,.16); }}
+.bk-pass-subtitle {{ position:relative; z-index:2; font-size:10px; font-weight:900; letter-spacing:2.5px; color:#DCEBFA; }}
+.bk-pass-rule {{ position:relative; z-index:2; display:flex; align-items:center; gap:10px; width:72%; margin:17px auto 0; color:#E5C77F; }}
+.bk-pass-rule span {{ flex:1; height:1px; background:linear-gradient(90deg,transparent,#D9C28D,transparent); }} .bk-pass-rule b {{ font-size:13px; }}
+.bk-pass-perforation {{ position:relative; height:1px; border-top:2px dashed #D9DEE8; margin:0 25px; }}
+.bk-pass-perforation::before,.bk-pass-perforation::after {{ content:""; position:absolute; top:-15px; width:29px; height:29px; background:{BG}; border-radius:50%; }}
+.bk-pass-perforation::before {{ left:-39px; }} .bk-pass-perforation::after {{ right:-39px; }}
+.bk-pass-bottom {{ display:grid; grid-template-columns:1fr 1px 96px; gap:20px; padding:27px 30px 24px; background:linear-gradient(180deg,#fff 0%,#FBFCFE 100%); }}
+.bk-pass-bottom-left {{ min-width:0; }}
+.bk-pass-bl-title {{ color:#0B63A7; font-size:13px; font-weight:900; letter-spacing:1.8px; margin-bottom:16px; }}
+.bk-pass-meta-row {{ color:#475467; font-size:13px; line-height:1.6; margin-bottom:7px; }}
+.bk-pass-meta-row b {{ color:#0F1F3D; }}
+.bk-pass-name-label {{ margin-top:15px; font-size:9px; font-weight:900; letter-spacing:1.7px; color:#98A2B3; }}
+.bk-pass-name-box {{ margin:4px 0 11px; padding:6px 0 9px; border-bottom:2px solid #0B63A7; font-size:21px; font-weight:900; color:#0F1F3D; word-break:keep-all; }}
 .bk-pass-name-box.empty {{ color:#98A2B3; font-size:15px; font-weight:600; }}
-.bk-pass-name-type {{ margin-left:8px; padding:3px 7px; border-radius:999px; background:#EEF5FB; color:#0B63A7; font-size:10px; font-weight:800; vertical-align:middle; }}
-.date-row {{ margin-top:9px; }} .bk-pass-vdivider {{ width:1px; background:repeating-linear-gradient(to bottom,#D9DEE8 0,#D9DEE8 5px,transparent 5px,transparent 10px); }}
+.bk-pass-name-type {{ margin-left:8px; padding:4px 8px; border-radius:999px; background:#EEF5FB; color:#0B63A7; font-size:9px; font-weight:900; vertical-align:middle; }}
+.date-row {{ margin-top:11px; }}
+.bk-pass-vdivider {{ width:1px; background:repeating-linear-gradient(to bottom,#D9DEE8 0,#D9DEE8 5px,transparent 5px,transparent 10px); }}
 .bk-pass-bottom-right {{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }}
-.bk-pass-date-label {{ font-size:10px; font-weight:900; letter-spacing:2px; color:#98A2B3; }} .bk-pass-date-num {{ color:#0B63A7; font-size:42px; font-weight:900; line-height:1.05; }}
-.bk-pass-weekday-eng {{ margin-top:3px; color:#667085; font-size:11px; font-weight:800; letter-spacing:2px; }}
-.bk-pass-footer {{ display:flex; justify-content:space-between; gap:10px; padding:11px 22px; background:#0B63A7; color:#fff; font-size:9px; font-weight:900; letter-spacing:1.5px; }}
+.bk-pass-date-label {{ font-size:9px; font-weight:900; letter-spacing:2.5px; color:#98A2B3; }}
+.bk-pass-date-num {{ color:#0B63A7; font-size:44px; font-weight:900; line-height:1.02; }}
+.bk-pass-weekday-eng {{ margin-top:4px; color:#667085; font-size:10px; font-weight:900; letter-spacing:2px; }}
+.bk-pass-footer {{ display:flex; justify-content:space-between; gap:10px; padding:12px 25px; background:#0F1F3D; color:#F4E5C0; font-size:9px; font-weight:900; letter-spacing:1.8px; border-top:3px solid #C59642; }}
 .bk-pass-register {{ margin-top:14px; }}
-@media (max-width:600px) {{ .bk-pass-wrap {{max-width:100%;}} .bk-pass-top {{padding:24px 18px 21px;}} .bk-pass-emblem {{width:112px;height:112px;}} .bk-pass-title-main {{font-size:36px;letter-spacing:6px;text-indent:6px;}} .bk-pass-bottom {{grid-template-columns:1fr 1px 72px;gap:12px;padding:20px 18px;}} .bk-pass-date-num {{font-size:34px;}} }}
+@media (max-width:600px) {{ .bk-pass-wrap {{max-width:100%;}} .bk-pass-card::after {{right:18px;font-size:7px;}} .bk-pass-top {{padding:36px 18px 23px;}} .bk-pass-emblem {{width:112px;height:112px;}} .bk-pass-title-main {{font-size:36px;letter-spacing:6px;text-indent:6px;}} .bk-pass-bottom {{grid-template-columns:1fr 1px 72px;gap:12px;padding:22px 18px;}} .bk-pass-date-num {{font-size:35px;}} .bk-pass-perforation {{margin:0 20px;}} }}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
