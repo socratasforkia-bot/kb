@@ -2182,26 +2182,10 @@ def page_directions():
     c1, c2 = st.columns([1.4, 1])
 
     with c1:
-        # 카카오맵 "지도퍼가기" 원본 코드를 그대로 실행합니다.
-        # roughmapLoader.js는 동적으로 주입하지 않고 HTML 문서 안에서
-        # 정적으로 먼저 로드한 뒤 Lander를 실행해야 합니다.
-        kakao_map_html = r"""<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-html, body { margin:0; padding:0; background:transparent; }
-#daumRoughmapContainer1785379777878 {
-    width:360px !important;
-    height:360px !important;
-    max-width:100%;
-    box-sizing:border-box;
-    overflow:hidden;
-}
-</style>
-</head>
-<body>
+        # ================================================================
+        # KAKAO ROUGHMAP - 사용자가 제공한 지도퍼가기 코드를 그대로 사용
+        # ================================================================
+        kakao_map_html = """
 <!-- * 카카오맵 - 지도퍼가기 -->
 <!-- 1. 지도 노드 -->
 <div id="daumRoughmapContainer1785379777878" class="root_daum_roughmap root_daum_roughmap_landing"></div>
@@ -2211,31 +2195,14 @@ html, body { margin:0; padding:0; background:transparent; }
 
 <!-- 3. 실행 스크립트 -->
 <script charset="UTF-8">
-    function renderKakaoRoughMap() {
-        if (window.daum && window.daum.roughmap && window.daum.roughmap.Lander) {
-            try {
-                new daum.roughmap.Lander({
-                    "timestamp" : "1785379777878",
-                    "key" : "s2wfzp5mbk8",
-                    "mapWidth" : "360",
-                    "mapHeight" : "360"
-                }).render();
-                return;
-            } catch (e) {
-                console.error("Kakao RoughMap render error:", e);
-            }
-        }
-        setTimeout(renderKakaoRoughMap, 100);
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", renderKakaoRoughMap);
-    } else {
-        renderKakaoRoughMap();
-    }
+    new daum.roughmap.Lander({
+        "timestamp" : "1785379777878",
+        "key" : "s2wfzp5mbk8",
+        "mapWidth" : "360",
+        "mapHeight" : "360"
+    }).render();
 </script>
-</body>
-</html>"""
+"""
         components.html(kakao_map_html, height=380, width=380, scrolling=False)
 
     with c2:
