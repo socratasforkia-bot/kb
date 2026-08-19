@@ -181,7 +181,7 @@ import folium
 import base64
 import random
 import io
-from datetime import datetime, date, time as dtime, timedelta
+from datetime import datetime, date, time as dtime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -916,14 +916,22 @@ def fetch_notices(viewer_scope="public"):
         if visibility == "members" and not is_member:
             continue
         created = row.get("created_at") or ""
+        try:
+            created_dt = datetime.fromisoformat(created.replace("Z", "+00:00")) if created else None
+            is_recent = bool(created_dt and (datetime.now(timezone.utc) - created_dt).total_seconds() <= 3 * 3600)
+        except Exception:
+            is_recent = False
         result.append({
             "id": row["id"],
             "title": row.get("title") or "",
             "content": row.get("content") or "",
             "date": created[:10] if created else "",
-            "new": bool(row.get("is_new")),
+            "created_at": created,
+            "new": bool(row.get("is_new")) and is_recent,
             "visibility": visibility,
         })
+    result.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    result.sort(key=lambda x: not x.get("new", False))
     return result
 
 
@@ -1018,6 +1026,7 @@ def fetch_booths():
             "desc": row.get("description") or "",
             "icon": row.get("icon") or "🏪",
             "image": row.get("image"),
+            "staff_count": row.get("staff_count"),
         })
     return result
 
@@ -1026,8 +1035,9 @@ def add_booth(data: dict):
     try:
         _write_client().table("booths").insert({
             "name": data["name"], "category": data["category"], "place": data["place"],
-            "hours": data["hours"], "description": data["desc"], "icon": data["icon"],
+            "hours": data.get("hours", ""), "description": data["desc"], "icon": data["icon"],
             "image": data.get("image"),
+            "staff_count": data.get("staff_count"),
         }).execute()
         fetch_booths.clear()
         return True, "부스가 등록되었습니다."
@@ -1038,7 +1048,8 @@ def add_booth(data: dict):
 def update_booth(booth_id, data: dict):
     payload = {
         "name": data["name"], "category": data["category"], "place": data["place"],
-        "hours": data["hours"], "description": data["desc"], "icon": data["icon"],
+        "hours": data.get("hours", ""), "description": data["desc"], "icon": data["icon"],
+        "staff_count": data.get("staff_count"),
     }
     if "image" in data:
         payload["image"] = data["image"]
@@ -1081,6 +1092,7 @@ def fetch_programs():
             "place": row.get("place") or "",
             "desc": row.get("description") or "",
             "icon": row.get("icon") or "🎫",
+            "image": row.get("image"),
         })
     return result
 
@@ -1091,7 +1103,7 @@ def add_program(data: dict):
             "name": data["name"], "category": data["category"],
             "program_date": data["date"], "program_time": data["time"],
             "place": data["place"], "description": data["desc"],
-            "icon": data["icon"],
+            "icon": data["icon"], "image": data.get("image"),
         }).execute()
         fetch_programs.clear()
         return True, "프로그램이 등록되었습니다."
@@ -1105,7 +1117,7 @@ def update_program(program_id, data: dict):
             "name": data["name"], "category": data["category"],
             "program_date": data["date"], "program_time": data["time"],
             "place": data["place"], "description": data["desc"],
-            "icon": data["icon"],
+            "icon": data["icon"], "image": data.get("image"),
         }).eq("id", program_id).execute()
         fetch_programs.clear()
         return True, "프로그램이 수정되었습니다."
@@ -1585,32 +1597,19 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 메인 페이지 프로그램 박스
-    # 프로그램이 없어도 박스 자체는 항상 표시해, 메인 화면에서 프로그램 영역을 바로 확인할 수 있게 합니다.
+    # 메인 프로그램: 박스 안 목록을 클릭하면 프로그램 페이지로 이동
     main_programs = fetch_programs()
     st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-
     if main_programs:
-        for p in main_programs[:4]:
-            st.markdown(
-                f"<div style='padding:10px 0;border-bottom:1px solid #EEF0F5;'>"
-                f"<div style='font-weight:800;font-size:15px;'>{p['icon']} {p['name']}</div>"
-                f"<div style='color:{MUTED};font-size:13px;margin-top:3px;'>"
-                f"{p['date']} · {p['time']} · {p['place']}</div></div>",
-                unsafe_allow_html=True,
-            )
+        for i, p in enumerate(main_programs[:4]):
+            if st.button(f"{p['icon']}  {p['name']}  ·  10/30", key=f"main-program-{p['id']}", use_container_width=True):
+                go("프로그램"); st.rerun()
+            st.caption(f"{p['time']} · {p['place']}")
     else:
-        st.markdown(
-            f"<div style='padding:16px 0;color:{MUTED};font-size:14px;'>"
-            "등록된 프로그램이 없습니다.</div>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
-        unsafe_allow_html=True,
-    )
+        st.info("등록된 프로그램이 없습니다.")
+    if st.button("전체 프로그램 보기 →", key="main-program-more", use_container_width=True):
+        go("프로그램"); st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
     # 시간표도 DB에 등록된 내용만 표시합니다.
@@ -1640,14 +1639,14 @@ def page_main():
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     main_notices = fetch_notices("member" if current_user() is not None else "public")
     if not main_notices:
-        st.write("등록된 공지사항이 없습니다.")
-    for n in main_notices[:4]:
-        badge = "<span class='bk-badge-new'>NEW</span>" if n.get("new") else ""
-        st.markdown(
-            f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #EEF0F5;'>"
-            f"<div>{n['title']}{badge}</div><div style='color:{MUTED};font-size:13px;'>{n['date']}</div></div>",
-            unsafe_allow_html=True,
-        )
+        st.info("등록된 공지사항이 없습니다.")
+    for n in main_notices[:5]:
+        badge = "  NEW" if n.get("new") else ""
+        label = f"📢 {n['title']}{badge}  ·  {n['date']}"
+        if st.button(label, key=f"main-notice-{n['id']}", use_container_width=True):
+            go("공지사항"); st.rerun()
+    if st.button("전체 공지사항 보기 →", key="main-notice-more", use_container_width=True):
+        go("공지사항"); st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="bk-section-title">🏪 부스 정보</div>', unsafe_allow_html=True)
@@ -1825,10 +1824,12 @@ def page_programs():
                 with st.form(f"program_edit_form_{p['id']}"):
                     new_name = st.text_input("프로그램 이름", value=p["name"], key=f"pg_name_{p['id']}")
                     new_cat = st.selectbox("카테고리", cat_options, index=default_idx, key=f"pg_cat_{p['id']}")
-                    new_date = st.text_input("날짜", value=p["date"], key=f"pg_date_{p['id']}")
+                    stdate = "10/30"
+                    st.text_input("날짜", value="10/30", disabled=True, key=f"pg_date_{p['id']}")
                     new_time = st.text_input("시간", value=p["time"], key=f"pg_time_{p['id']}")
                     new_place = st.text_input("장소", value=p["place"], key=f"pg_place_{p['id']}")
                     new_desc = st.text_area("설명", value=p["desc"], key=f"pg_desc_{p['id']}")
+                    new_image = st.file_uploader("사진 교체 (선택)", type=["png","jpg","jpeg","gif","webp"], key=f"pg_image_{p['id']}")
                     new_icon = st.text_input(
                         "아이콘(이모티콘)", value=p["icon"], max_chars=8, key=f"pg_icon_{p['id']}"
                     )
@@ -1839,8 +1840,9 @@ def page_programs():
                 if save_clicked:
                     ok, msg = update_program(p["id"], {
                         "name": new_name.strip() or p["name"], "category": new_cat,
-                        "date": new_date, "time": new_time, "place": new_place,
+                        "date": "10/30", "time": new_time, "place": new_place,
                         "desc": new_desc, "icon": new_icon.strip() or "🎫",
+                        "image": (f"data:{new_image.type};base64,{base64.b64encode(new_image.getvalue()).decode('utf-8')}" if new_image is not None else p.get("image")),
                     })
                     (st.success if ok else st.error)(msg)
                     if ok:
@@ -1859,6 +1861,7 @@ def page_programs():
             '<a class="bk-fab" href="?nav=program_add" target="_self" title="프로그램 추가">+</a>',
             unsafe_allow_html=True,
         )
+        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
 
     render_footer()
 
@@ -1871,42 +1874,40 @@ def page_program_add():
         st.error("관리자만 접근할 수 있는 페이지입니다.")
         if st.button("프로그램으로 돌아가기"):
             go("프로그램"); st.rerun()
-        render_footer()
-        return
+        render_footer(); return
 
     st.markdown('<div class="bk-section-title">➕ 프로그램 등록</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     with st.form("program_add_page_form"):
         pn = st.text_input("프로그램 이름")
         pcat = st.selectbox("카테고리", ["공연", "체험", "전시", "기타"])
-        pdate = st.text_input("날짜", placeholder="예: 9.5(금)")
+        stdate = st.text_input("날짜", value="10/30")
         ptime = st.text_input("시간", placeholder="예: 14:00")
         pplace = st.text_input("장소")
         pdesc = st.text_area("설명")
         picon = st.text_input("아이콘(이모티콘)", value="🎫", max_chars=8)
+        pimage = st.file_uploader("프로그램 사진 (선택)", type=["png", "jpg", "jpeg", "gif", "webp"], key="program_add_image")
         c1, c2 = st.columns(2)
         submit = c1.form_submit_button("등록", use_container_width=True)
         cancel = c2.form_submit_button("취소", use_container_width=True)
-
     if cancel:
         go("프로그램"); st.rerun()
-
     if submit:
         if not pn.strip():
             st.error("프로그램 이름을 입력해주세요.")
         else:
-            ok, msg = add_program({"name": pn.strip(), "category": pcat, "date": pdate,
-                                    "time": ptime, "place": pplace, "desc": pdesc,
-                                    "icon": picon.strip() or "🎫"})
+            image_data_uri = None
+            if pimage is not None:
+                b64 = base64.b64encode(pimage.getvalue()).decode("utf-8")
+                image_data_uri = f"data:{pimage.type};base64,{b64}"
+            ok, msg = add_program({"name": pn.strip(), "category": pcat, "date": "10/30",
+                                   "time": ptime, "place": pplace, "desc": pdesc,
+                                   "icon": picon.strip() or "🎫", "image": image_data_uri})
             if ok:
-                st.success(msg)
-                go("프로그램"); st.rerun()
-            else:
-                st.error(msg)
-
+                st.success(msg); go("프로그램"); st.rerun()
+            else: st.error(msg)
     st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
-
 
 # ----------------------------------------------------------------------
 # 페이지 : 시간표
@@ -1976,6 +1977,7 @@ def page_schedule():
             '<a class="bk-fab" href="?nav=schedule_add" target="_self" title="시간표 추가">+</a>',
             unsafe_allow_html=True,
         )
+        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
 
     render_footer()
 
@@ -2059,20 +2061,22 @@ def page_booths():
                     <div class="bk-card" style="margin-bottom:8px;">
                         {img_html}
                         <div style="font-weight:800;font-size:17px;margin-top:4px;">{b['name']} <span class="bk-chip">{b['category']}</span></div>
-                        <div style="color:{MUTED};margin-top:6px;">📍 {b['place']} &nbsp;|&nbsp; 🕒 {b['hours']}</div>
+                        <div style="color:{MUTED};margin-top:6px;">📍 {b['place']}</div>
                         <div style="margin-top:8px;">{b['desc']}</div>
                     </div>
                     """, unsafe_allow_html=True,
                 )
 
                 if admin:
+                    if b.get("staff_count") is not None:
+                        st.caption(f"👥 부스 인원: {b.get('staff_count')}명")
                     with st.expander("✏️ 이 부스 수정 / 삭제", expanded=False):
                         with st.form(f"booth_page_edit_form_{b['id']}"):
                             new_name = st.text_input("부스 이름", value=b["name"], key=f"bp_name_{b['id']}")
                             new_cat = st.selectbox("카테고리", ["동아리 부스", "먹거리 부스"], index=0 if b.get("category") != "먹거리 부스" else 1, key=f"bp_cat_{b['id']}")
                             new_place = st.text_input("위치", value=b["place"], key=f"bp_place_{b['id']}")
-                            new_hours = st.text_input("운영시간", value=b["hours"], key=f"bp_hours_{b['id']}")
                             new_desc = st.text_area("설명", value=b["desc"], key=f"bp_desc_{b['id']}")
+                            new_people = st.number_input("부스 인원 (관리자 전용)", min_value=0, step=1, value=int(b.get("staff_count") or 0), key=f"bp_people_{b['id']}")
                             new_icon = st.text_input(
                                 "아이콘(이모티콘)", value=b.get("icon") or "🏪",
                                 max_chars=8, key=f"bp_icon_{b['id']}",
@@ -2096,8 +2100,9 @@ def page_booths():
                                 "name": new_name.strip() or b["name"],
                                 "category": new_cat,
                                 "place": new_place,
-                                "hours": new_hours,
+                                "hours": "",
                                 "desc": new_desc,
+                                "staff_count": int(new_people),
                                 "icon": new_icon.strip() or "🏪",
                             }
                             if remove_image:
@@ -2121,6 +2126,7 @@ def page_booths():
             '<a class="bk-fab" href="?nav=booth_add" target="_self" title="부스 추가">+</a>',
             unsafe_allow_html=True,
         )
+        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
 
     render_footer()
 
@@ -2133,32 +2139,22 @@ def page_booth_add():
         st.error("관리자만 접근할 수 있는 페이지입니다.")
         if st.button("부스 정보로 돌아가기"):
             go("부스 정보"); st.rerun()
-        render_footer()
-        return
-
+        render_footer(); return
     st.markdown('<div class="bk-section-title">➕ 부스 등록</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     with st.form("booth_add_page_form"):
         bn = st.text_input("부스 이름")
         bc = st.selectbox("카테고리", ["동아리 부스", "먹거리 부스"])
         bp = st.text_input("위치")
-        bh = st.text_input("운영시간")
         bd = st.text_area("설명")
-        b_icon = st.text_input(
-            "아이콘(이모티콘)", value="🏪", max_chars=8,
-            help="사진을 등록해도 이 아이콘이 사진 위 배지로 함께 표시됩니다. 예: 🍔 🎮 🎨 🎵 ☕",
-        )
-        b_image = st.file_uploader(
-            "부스 사진 (선택, 등록하면 사진과 아이콘이 함께 표시됩니다)",
-            type=["png", "jpg", "jpeg", "gif", "webp"], key="booth_add_page_image"
-        )
+        bpeople = st.number_input("부스 인원 (관리자 전용)", min_value=0, step=1, value=0)
+        b_icon = st.text_input("아이콘(이모티콘)", value="🏪", max_chars=8)
+        b_image = st.file_uploader("부스 사진 (선택)", type=["png", "jpg", "jpeg", "gif", "webp"], key="booth_add_page_image")
         c1, c2 = st.columns(2)
         submit = c1.form_submit_button("등록", use_container_width=True)
         cancel = c2.form_submit_button("취소", use_container_width=True)
-
     if cancel:
         go("부스 정보"); st.rerun()
-
     if submit:
         if not bn.strip():
             st.error("부스 이름을 입력해주세요.")
@@ -2168,17 +2164,13 @@ def page_booth_add():
                 b64 = base64.b64encode(b_image.getvalue()).decode("utf-8")
                 image_data_uri = f"data:{b_image.type};base64,{b64}"
             ok, msg = add_booth({"name": bn.strip(), "category": bc, "place": bp,
-                                  "hours": bh, "desc": bd, "icon": b_icon.strip() or "🏪",
-                                  "image": image_data_uri})
+                                 "hours": "", "desc": bd, "icon": b_icon.strip() or "🏪",
+                                 "image": image_data_uri, "staff_count": int(bpeople)})
             if ok:
-                st.success(msg)
-                go("부스 정보"); st.rerun()
-            else:
-                st.error(msg)
-
+                st.success(msg); go("부스 정보"); st.rerun()
+            else: st.error(msg)
     st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
-
 
 # ----------------------------------------------------------------------
 # 페이지 : 오시는 길
@@ -2201,9 +2193,9 @@ def page_directions():
 
         fmap = folium.Map(
             location=[school_lat, school_lon],
-            zoom_start=14,
-            min_zoom=14,
-            max_zoom=17,
+            zoom_start=16,
+            min_zoom=15,
+            max_zoom=18,
             control_scale=False,
             zoom_control=True,
             tiles="OpenStreetMap",
@@ -2265,11 +2257,9 @@ def page_directions():
         # 전체 범위도 경복고등학교가 시각적으로 중심이 되도록 고정합니다.
         fmap.fit_bounds(
             [
-                [school_lat - 0.008, school_lon - 0.006],
-                [school_lat + 0.008, school_lon + 0.006],
-            ],
-            padding=(10, 10),
-            max_zoom=14,
+                [school_lat - 0.0022, school_lon - 0.0022],
+                [school_lat + 0.0022, school_lon + 0.0022],
+            ], padding=(8, 8), max_zoom=16
         )
 
         map_html = fmap.get_root().render()
@@ -2283,9 +2273,9 @@ def page_directions():
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         st.write(f"**주소**\n\n{ss.site_info['address']}")
         st.markdown("---")
-        st.write(f"🚇 **지하철**\n\n{ss.site_info['subway']}")
-        st.write(f"🚌 **버스**\n\n{ss.site_info['bus']}")
-        st.write(f"🚶 **도보**\n\n{ss.site_info['walk']}")
+        st.markdown(f"<div style='font-weight:900;font-size:16px;'>🚇 3호선 경복궁역 3번 출구</div><div style='font-weight:800;margin:6px 0 14px;'>경복궁역 3번 출구 도보 약 15분</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-weight:900;font-size:16px;'>🚌 버스</div><div style='font-weight:800;line-height:1.8;'>7022 · 7212 · 1020 → 경복고등학교<br>8111 · 7016 · 7018 → 효자동</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-weight:900;font-size:16px;margin-top:14px;'>🚶 도보</div><div style='font-weight:800;'>경복궁역에서 약 15분</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
 
@@ -2350,6 +2340,7 @@ def page_notices():
             '<a class="bk-fab" href="?nav=notice_add" target="_self" title="공지사항 추가">+</a>',
             unsafe_allow_html=True,
         )
+        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
 
     render_footer()
 
