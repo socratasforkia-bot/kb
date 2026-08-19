@@ -1742,6 +1742,8 @@ def page_main():
                     </div>
                     """, unsafe_allow_html=True,
                 )
+    # 부스 카드와 버튼 사이에 살짝 여백을 줍니다.
+    st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
     if st.button("더 많은 부스 보기 →", key="btn-booths"):
         go("부스 정보")
         st.rerun()
