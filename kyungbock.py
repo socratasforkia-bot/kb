@@ -1597,58 +1597,82 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 메인 프로그램: 박스 안 목록을 클릭하면 프로그램 페이지로 이동
+    # ================================================================
+    # 메인 페이지: 프로그램 / 공지사항은 반드시 '흰 박스 안'에 표시
+    # 각 목록 항목을 누르면 해당 상세 목록 페이지로 이동
+    # ================================================================
     main_programs = fetch_programs()
-    st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    if main_programs:
-        for i, p in enumerate(main_programs[:4]):
-            if st.button(f"{p['icon']}  {p['name']}  ·  10/30", key=f"main-program-{p['id']}", use_container_width=True):
-                go("프로그램"); st.rerun()
-            st.caption(f"{p['time']} · {p['place']}")
-    else:
-        st.info("등록된 프로그램이 없습니다.")
-    if st.button("전체 프로그램 보기 →", key="main-program-more", use_container_width=True):
-        go("프로그램"); st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
+      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">🎤 프로그램</div>
+    """, unsafe_allow_html=True)
 
-    # 시간표도 DB에 등록된 내용만 표시합니다.
-    st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
-    grouped_main = fetch_schedule_by_day()
-    if grouped_main:
-        first_day = list(grouped_main.keys())[0]
-        schedule_items_html = "".join(
-            f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
-            f"<b>{it['time']}</b>&nbsp;&nbsp;{it['program']} "
-            f"<span style='color:{MUTED};'>({it['place']})</span></div>"
-            for it in grouped_main[first_day][:4]
-        )
+    if main_programs:
+        for p in main_programs[:5]:
+            st.markdown(
+                f"""<a href="?nav={SLUG_BY_NAME['프로그램']}" target="_self" style="display:block;text-decoration:none;color:inherit;">
+                <div style="padding:13px 6px;border-top:1px solid #EEF0F5;cursor:pointer;">
+                  <div style="font-weight:800;font-size:15px;">{p['icon']} {p['name']}</div>
+                  <div style="color:{MUTED};font-size:13px;margin-top:4px;">10/30 · {p['time']} · {p['place']}</div>
+                </div></a>""",
+                unsafe_allow_html=True,
+            )
     else:
-        schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
+        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 프로그램이 없습니다.</div>', unsafe_allow_html=True)
+
     st.markdown(
-        f"""
-        <div class="bk-card">
-            {schedule_items_html}
-            <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['시간표']}" target="_self">전체 시간표 보기 →</a>
-        </div>
-        """,
+        f'<a href="?nav={SLUG_BY_NAME["프로그램"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 프로그램 보기 →</a></div>',
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
-    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    main_notices = fetch_notices("member" if current_user() is not None else "public")
-    if not main_notices:
-        st.info("등록된 공지사항이 없습니다.")
-    for n in main_notices[:5]:
-        badge = "  NEW" if n.get("new") else ""
-        label = f"📢 {n['title']}{badge}  ·  {n['date']}"
-        if st.button(label, key=f"main-notice-{n['id']}", use_container_width=True):
-            go("공지사항"); st.rerun()
-    if st.button("전체 공지사항 보기 →", key="main-notice-more", use_container_width=True):
-        go("공지사항"); st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 시간표도 기존처럼 흰 박스 안에 유지
+    grouped_main = fetch_schedule_by_day()
+    st.markdown("""
+    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
+      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">📅 시간표</div>
+    """, unsafe_allow_html=True)
+    if grouped_main:
+        first_day = list(grouped_main.keys())[0]
+        for it in grouped_main[first_day][:4]:
+            st.markdown(
+                f"<div style='padding:10px 6px;border-top:1px solid #EEF0F5;font-size:13px;'><b>{it['time']}</b>&nbsp;&nbsp;{it['program']} <span style='color:{MUTED};'>({it['place']})</span></div>",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 시간표가 없습니다.</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<a href="?nav={SLUG_BY_NAME["시간표"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 시간표 보기 →</a></div>',
+        unsafe_allow_html=True,
+    )
 
+    # 공지사항: NEW가 먼저 나오도록 fetch 결과에서 정렬
+    main_notices = fetch_notices("member" if current_user() is not None else "public")
+    main_notices = sorted(main_notices, key=lambda n: (not bool(n.get("new")), n.get("date") or ""))
+    st.markdown("""
+    <div class="bk-card" style="background:#fff; border-radius:16px; padding:20px; margin-top:18px;">
+      <div style="font-size:20px; font-weight:900; margin-bottom:12px;">📢 공지사항</div>
+    """, unsafe_allow_html=True)
+
+    if main_notices:
+        for n in main_notices[:5]:
+            badge = '<span class="bk-badge-new" style="margin-left:7px;">NEW</span>' if n.get("new") else ""
+            st.markdown(
+                f"""<a href="?nav={SLUG_BY_NAME['공지사항']}" target="_self" style="display:block;text-decoration:none;color:inherit;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 6px;border-top:1px solid #EEF0F5;cursor:pointer;">
+                  <div style="font-weight:800;">{n['title']}{badge}</div>
+                  <div style="color:{MUTED};font-size:12px;white-space:nowrap;margin-left:10px;">{n['date']}</div>
+                </div></a>""",
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown(f'<div style="padding:14px 6px;color:{MUTED};">등록된 공지사항이 없습니다.</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        f'<a href="?nav={SLUG_BY_NAME["공지사항"]}" target="_self" style="display:block;text-align:center;padding:12px 0;margin-top:8px;border-top:1px solid #EEF0F5;text-decoration:none;font-weight:800;">전체 공지사항 보기 →</a></div>',
+        unsafe_allow_html=True,
+    )
+
+    # 부스 정보
     st.markdown('<div class="bk-section-title">🏪 부스 정보</div>', unsafe_allow_html=True)
     main_booths = fetch_booths()
     if not main_booths:
