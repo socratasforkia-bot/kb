@@ -28,6 +28,12 @@ Streamlit 기반 반응형 웹앱
     pip install streamlit supabase streamlit-cookies-manager
     streamlit run app.py
 
+
+[추가 기능 - 공지 공개범위 / FAQ / 랜덤 / 부스 분류]
+공지사항은 전체 공개 또는 학생/교직원 전용으로 설정할 수 있습니다. FAQ는 Supabase에서 관리하며
+관리자는 추가/수정/삭제할 수 있습니다. 부스는 동아리 부스/먹거리 부스로 분류하고 랜덤 추천 기능을 제공합니다.
+방문자 통계 및 방문 기록 기능은 제거했습니다.
+
 ----------------------------------------------------------------------
 [수정 사항 3 - 관리자가 공지사항을 수정/삭제하지 못하던 문제 해결]
 기존 코드의 "사이트 관리" 탭에는 공지사항을 새로 "등록"하는 폼만 있고,
@@ -173,8 +179,8 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
+import random
 import io
-import re
 from datetime import datetime, date, time as dtime, timedelta
 from pathlib import Path
 
@@ -264,23 +270,33 @@ def _debug_secret_paths() -> str:
 
 
 def _get_secret(key: str, required: bool = True, default=None):
-    # Render에서는 Environment Variables를 우선 사용하고,
-    # 로컬에서는 기존 secrets.toml도 사용할 수 있습니다.
-    import os
-    val = os.getenv(key)
-    if not val:
-        try:
-            val = st.secrets.get(key)
-        except Exception:
-            val = None
+    try:
+        val = st.secrets.get(key)
+    except Exception:
+        val = None
+        if required:
+            st.error(
+                "`secrets.toml` 파일을 찾을 수 없습니다.\n\n"
+                "다음 경로들을 확인해봤습니다.\n\n"
+                f"{_debug_secret_paths()}\n\n"
+                "파일이 아예 없다면 스크립트가 있는 폴더 밑에 `.streamlit` 폴더를 만들고 "
+                "그 안에 `secrets.toml` 파일을 아래 형식으로 만들어주세요.\n\n"
+                "```\n"
+                "SUPABASE_URL = \"https://xxxxxxxxxxxx.supabase.co\"\n"
+                "SUPABASE_ANON_KEY = \"anon 키\"\n"
+                "SUPABASE_SERVICE_KEY = \"service_role 키 (선택)\"\n"
+                "```"
+            )
+            st.stop()
     if required and not val:
         st.error(
-            f"환경변수 `{key}`가 설정되어 있지 않습니다.\n\n"
-            "Render: Dashboard → Environment에 해당 변수를 추가해주세요.\n"
-            "로컬: `.streamlit/secrets.toml`을 사용해도 됩니다."
+            f"`.streamlit/secrets.toml` 에 `{key}` 값이 설정되어 있지 않습니다.\n\n"
+            "함께 받은 `supabase_setup.sql` 안내와 secrets.toml 예시를 참고해 설정해주세요."
         )
         st.stop()
-    return val if val else default
+    if not val:
+        return default
+    return val
 
 
 SUPABASE_URL = _get_secret("SUPABASE_URL")
@@ -293,7 +309,9 @@ COOKIE_PASSWORD = _get_secret(
 )
 if COOKIE_PASSWORD == "bukakje-insecure-default-change-me-in-secrets-toml":
     st.warning(
-        "⚠️ `COOKIE_PASSWORD` 환경변수가 설정되어 있지 않아 임시 기본값을 사용합니다. Render에서는 Dashboard → Environment에 `COOKIE_PASSWORD`를 추가하는 것을 권장합니다.",
+        "⚠️ `secrets.toml` 에 `COOKIE_PASSWORD` 가 설정되어 있지 않아 "
+        "임시 기본값을 사용합니다. 서버를 재시작하면 로그인 유지 쿠키가 무효화될 수 있으니 "
+        "`COOKIE_PASSWORD = \"아무 긴 임의 문자열\"` 을 secrets.toml에 추가해주세요.",
         icon="⚠️",
     )
 
@@ -838,8 +856,9 @@ def _write_client():
 # 공지사항 / 부스 — Supabase 연동
 # ----------------------------------------------------------------------
 @st.cache_data(ttl=NOTICES_CACHE_TTL)
-def fetch_notices():
+def fetch_notices(viewer_scope="public"):
     client = get_user_client()
+    is_member = viewer_scope == "member"
     try:
         res = client.table("notices").select("*").order("created_at", desc=True).execute()
     except Exception as e:
@@ -847,6 +866,9 @@ def fetch_notices():
         return []
     result = []
     for row in (res.data or []):
+        visibility = row.get("visibility") or "all"
+        if visibility == "members" and not is_member:
+            continue
         created = row.get("created_at") or ""
         result.append({
             "id": row["id"],
@@ -854,26 +876,29 @@ def fetch_notices():
             "content": row.get("content") or "",
             "date": created[:10] if created else "",
             "new": bool(row.get("is_new")),
+            "visibility": visibility,
         })
     return result
 
 
-def add_notice(title: str, content: str, is_new: bool):
+def add_notice(title: str, content: str, is_new: bool, visibility: str = "all"):
     try:
-        _write_client().table("notices").insert(
-            {"title": title, "content": content, "is_new": is_new}
-        ).execute()
+        _write_client().table("notices").insert({
+            "title": title, "content": content, "is_new": is_new,
+            "visibility": visibility,
+        }).execute()
         fetch_notices.clear()
         return True, "공지사항이 등록되었습니다."
     except Exception as e:
         return False, _friendly_db_error(e)
 
 
-def update_notice(notice_id, title: str, content: str, is_new: bool):
+def update_notice(notice_id, title: str, content: str, is_new: bool, visibility: str = "all"):
     try:
-        _write_client().table("notices").update(
-            {"title": title, "content": content, "is_new": is_new}
-        ).eq("id", notice_id).execute()
+        _write_client().table("notices").update({
+            "title": title, "content": content, "is_new": is_new,
+            "visibility": visibility,
+        }).eq("id", notice_id).execute()
         fetch_notices.clear()
         return True, "공지사항이 수정되었습니다."
     except Exception as e:
@@ -885,6 +910,45 @@ def delete_notice(notice_id):
         _write_client().table("notices").delete().eq("id", notice_id).execute()
         fetch_notices.clear()
         return True, "공지사항이 삭제되었습니다."
+    except Exception as e:
+        return False, _friendly_db_error(e)
+
+
+@st.cache_data(ttl=FAQ_CACHE_TTL if "FAQ_CACHE_TTL" in globals() else 30)
+def fetch_faqs():
+    client = get_user_client()
+    try:
+        res = client.table("faqs").select("*").order("created_at", desc=True).execute()
+        return [{"id": r["id"], "question": r.get("question") or "",
+                 "answer": r.get("answer") or ""} for r in (res.data or [])]
+    except Exception as e:
+        st.error(_friendly_db_error(e))
+        return []
+
+
+def add_faq(question: str, answer: str):
+    try:
+        _write_client().table("faqs").insert({"question": question, "answer": answer}).execute()
+        fetch_faqs.clear()
+        return True, "FAQ가 등록되었습니다."
+    except Exception as e:
+        return False, _friendly_db_error(e)
+
+
+def update_faq(faq_id, question: str, answer: str):
+    try:
+        _write_client().table("faqs").update({"question": question, "answer": answer}).eq("id", faq_id).execute()
+        fetch_faqs.clear()
+        return True, "FAQ가 수정되었습니다."
+    except Exception as e:
+        return False, _friendly_db_error(e)
+
+
+def delete_faq(faq_id):
+    try:
+        _write_client().table("faqs").delete().eq("id", faq_id).execute()
+        fetch_faqs.clear()
+        return True, "FAQ가 삭제되었습니다."
     except Exception as e:
         return False, _friendly_db_error(e)
 
@@ -1013,52 +1077,6 @@ def delete_program(program_id):
 
 
 # ----------------------------------------------------------------------
-# 공개 시간 필터
-# - 비로그인 방문자는 시작 시간이 16:00 이상인 항목만 볼 수 있습니다.
-# - 로그인한 학생/교직원/관리자는 전체 항목을 볼 수 있습니다.
-# ----------------------------------------------------------------------
-def event_time_hour(value):
-    """시간 문자열에서 시작 시각의 hour를 반환합니다. 파싱할 수 없으면 None."""
-    text = str(value or "").strip().lower()
-    if not text:
-        return None
-
-    # 오전/오후 표기: 예) 오후 4시, 오후 4:30, 오전 10시
-    m = re.search(r"(오전|오후)\s*(\d{1,2})(?::(\d{2}))?\s*(?:시)?", text)
-    if m:
-        hour = int(m.group(2))
-        minute = int(m.group(3) or 0)
-        if hour == 12:
-            hour = 0
-        if m.group(1) == "오후":
-            hour += 12
-        return hour + minute / 60
-
-    # 24시간 표기: 예) 16:00, 16시, 16.00
-    m = re.search(r"(?<!\d)(\d{1,2})(?::|\.)(\d{2})", text)
-    if m:
-        return int(m.group(1)) + int(m.group(2)) / 60
-
-    m = re.search(r"(?<!\d)(\d{1,2})\s*시", text)
-    if m:
-        return int(m.group(1))
-
-    return None
-
-
-def filter_public_after_4(items, time_key):
-    return [
-        item for item in items
-        if event_time_hour(item.get(time_key)) is not None
-        and event_time_hour(item.get(time_key)) >= 16
-    ]
-
-
-def is_logged_in_user():
-    return current_user() is not None
-
-
-# ----------------------------------------------------------------------
 # 시간표 — Supabase 연동 (관리자 추가/수정/삭제 가능)
 # ----------------------------------------------------------------------
 @st.cache_data(ttl=SCHEDULE_CACHE_TTL)
@@ -1118,70 +1136,6 @@ def delete_schedule_item(item_id):
         _write_client().table("schedule").delete().eq("id", item_id).execute()
         fetch_schedule_flat.clear()
         return True, "시간표 항목이 삭제되었습니다."
-    except Exception as e:
-        return False, _friendly_db_error(e)
-
-
-# ----------------------------------------------------------------------
-# 방문자 통계 — Supabase 연동
-# ----------------------------------------------------------------------
-VISIT_STATS_CACHE_TTL = 60
-
-
-def record_visit():
-    if ss.get("visit_recorded"):
-        return
-    ss.visit_recorded = True
-    try:
-        get_user_client().table("visits").insert({}).execute()
-    except Exception:
-        pass
-
-
-@st.cache_data(ttl=VISIT_STATS_CACHE_TTL)
-def fetch_visit_total() -> int:
-    client = get_user_client()
-    try:
-        res = client.table("visits").select("id", count="exact").execute()
-        return res.count or 0
-    except Exception:
-        return 0
-
-
-@st.cache_data(ttl=VISIT_STATS_CACHE_TTL)
-def fetch_visit_daily(days: int = 14) -> dict:
-    client = get_user_client()
-    since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00")
-    try:
-        res = (
-            client.table("visits")
-            .select("created_at")
-            .gte("created_at", since)
-            .limit(20000)
-            .execute()
-        )
-    except Exception:
-        return {}
-    counts = {}
-    for row in (res.data or []):
-        created = row.get("created_at") or ""
-        day = created[:10]
-        if day:
-            counts[day] = counts.get(day, 0) + 1
-    return dict(sorted(counts.items()))
-
-
-def delete_all_visits():
-    """관리자 페이지에서 방문자 통계를 전체 삭제합니다."""
-    admin_client = get_admin_client()
-    if admin_client is None:
-        return False, "SUPABASE_SERVICE_KEY가 설정되어 있어야 방문자 통계를 삭제할 수 있습니다."
-    try:
-        # UUID 컬럼이므로 빈 문자열이 아닌 모든 행을 대상으로 삭제합니다.
-        admin_client.table("visits").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
-        fetch_visit_total.clear()
-        fetch_visit_daily.clear()
-        return True, "방문자 통계를 모두 삭제했습니다."
     except Exception as e:
         return False, _friendly_db_error(e)
 
@@ -1470,14 +1424,19 @@ def logout():
 # 상단바 + 우측 슬라이드 드로어(햄버거 메뉴)
 # ----------------------------------------------------------------------
 PUBLIC_PAGES = [
-    ("메인", "🏠", "home"), ("프로그램", "🎤", "programs"),
-    ("시간표", "📅", "schedule"), ("부스 정보", "🏪", "booths"), ("오시는 길", "📍", "directions"),
-    ("공지사항", "📢", "notices"),
+    ("메인", "🏠", "home"), ("축제 안내", "🎉", "intro"), ("프로그램", "🎤", "programs"),
+    ("시간표", "📅", "schedule"), ("부스 정보", "🏪", "booths"), ("랜덤 추천", "🎲", "random"),
+    ("오시는 길", "📍", "directions"), ("공지사항", "📢", "notices"), ("FAQ", "❓", "faq"),
 ]
 
 # 사이드바(드로어) 메뉴에만 노출되는 페이지들.
+#   - "인사말": 별도 페이지
+#   - "프로그램 구성": 요청에 따라 사이드바에만 노출. 실제로는 기존 "프로그램"
+#     페이지로 연결됩니다(그 페이지 안에서 관리자는 등록/수정/삭제,
+#     일반 방문자는 조회를 할 수 있습니다).
 DRAWER_ONLY_PAGES = [
     ("인사말", "💌", "greeting"),
+    ("프로그램 구성", "🗂️", "program_manage"),
 ]
 
 SLUG_BY_NAME = {name: slug for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAGES}
@@ -1486,6 +1445,7 @@ NAV_SLUGS = {slug: name for (name, icon, slug) in PUBLIC_PAGES + DRAWER_ONLY_PAG
 NAV_SLUGS.update({"login": "로그인", "mypage": "마이페이지", "admin": "관리자 페이지",
                    "booth_add": "부스 등록", "notice_add": "공지사항 등록",
                    "program_add": "프로그램 등록", "schedule_add": "시간표 등록",
+                   "program_manage": "프로그램",  # 사이드바 '프로그램 구성' → 프로그램 페이지로 연결
                    "logout": "__logout__"})
 
 
@@ -1576,7 +1536,7 @@ def page_main():
 
     st.write("")
     st.markdown('<div class="bk-iconmenu">', unsafe_allow_html=True)
-    icon_cols = st.columns(len(PUBLIC_PAGES) - 1)
+    icon_cols = st.columns(6)
     for col, (name, icon, slug) in zip(icon_cols, PUBLIC_PAGES[1:]):
         with col:
             if st.button(f"{icon}\n\n{name}", key=f"iconmenu-{name}", use_container_width=True):
@@ -1588,26 +1548,19 @@ def page_main():
     c1, c3 = st.columns(2)
 
     with c1:
-        user_logged_in = current_user() is not None
-        main_programs = fetch_programs()
-        if not user_logged_in:
-            main_programs = [p for p in main_programs if event_time_hour(p.get("time")) is not None and event_time_hour(p.get("time")) >= 16]
-        preview = main_programs[:4]
-        if preview:
-            program_items_html = "".join(
-                f"<div style='padding:6px 0;border-bottom:1px solid #EEF0F5;font-size:13px;'>"
-                f"<b>{p['time']}</b>&nbsp;&nbsp;{p['name']} "
-                f"<span style='color:{MUTED};'>({p['place']})</span></div>"
-                for p in preview
-            )
-        else:
-            program_items_html = f"<div style='color:{MUTED};font-size:13px;'>현재 공개할 프로그램이 없습니다.</div>"
         st.markdown(
             f"""
             <div class="bk-card">
-                <h4>🎤 프로그램</h4>
-                {program_items_html}
-                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['프로그램']}" target="_self">전체 프로그램 보기 →</a>
+                <h4>🎉 축제 안내</h4>
+                <div style="height:110px;border-radius:12px;margin-bottom:10px;
+                            background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
+                            display:flex;align-items:center;justify-content:center;color:white;font-size:32px;">
+                    🏫
+                </div>
+                <div style="color:{MUTED};font-size:13px;">
+                    북악제 소개, 일정, 장소 등 모든 정보를 확인할 수 있습니다.
+                </div>
+                <a class="bk-card-btn" href="?nav={SLUG_BY_NAME['축제 안내']}" target="_self">자세히 보기 →</a>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1615,9 +1568,6 @@ def page_main():
 
     with c3:
         grouped_main = fetch_schedule_by_day()
-        if not user_logged_in:
-            grouped_main = {day: [it for it in items if event_time_hour(it.get("time")) is not None and event_time_hour(it.get("time")) >= 16] for day, items in grouped_main.items()}
-            grouped_main = {day: items for day, items in grouped_main.items() if items}
         if grouped_main:
             first_day = list(grouped_main.keys())[0]
             schedule_items_html = "".join(
@@ -1627,7 +1577,7 @@ def page_main():
                 for it in grouped_main[first_day][:4]
             )
         else:
-            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>현재 공개할 시간표가 없습니다.</div>"
+            schedule_items_html = f"<div style='color:{MUTED};font-size:13px;'>등록된 시간표가 없습니다.</div>"
         st.markdown(
             f"""
             <div class="bk-card">
@@ -1641,7 +1591,7 @@ def page_main():
 
     st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-    main_notices = fetch_notices()
+    main_notices = fetch_notices("member" if current_user() is not None else "public")
     if not main_notices:
         st.write("등록된 공지사항이 없습니다.")
     for n in main_notices[:4]:
@@ -1674,6 +1624,38 @@ def page_main():
     if st.button("더 많은 부스 보기 →", key="btn-booths"):
         go("부스 정보"); st.rerun()
 
+    render_footer()
+
+
+# ----------------------------------------------------------------------
+# 페이지 : 축제 안내
+# ----------------------------------------------------------------------
+def page_intro():
+    st.markdown('<div class="bk-section-title">🎉 축제 안내</div>', unsafe_allow_html=True)
+    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div style="height:160px;border-radius:12px;margin-bottom:16px;
+                    background:linear-gradient(135deg,{NAVY} 0%, {BLUE_PILL} 100%);
+                    display:flex;align-items:center;justify-content:center;color:white;font-size:52px;">
+            🏫
+        </div>
+        """, unsafe_allow_html=True,
+    )
+    st.markdown(f"""
+**북악제 소개**
+경복고등학교의 대표 축제인 **{FESTIVAL_NAME}**는 학생들이 직접 기획하고 준비하는
+공연, 체험, 전시가 어우러진 종합 축제입니다.
+
+**축제 일정**  {FESTIVAL_DATE.strftime('%Y년 %m월 %d일')}
+
+**축제 장소**  경복고등학교 전 교내 (운동장, 체육관, 본관 등)
+
+**주요 행사**  개막식·폐막식 · 동아리 공연 및 발표회 · 학급/동아리 체험 부스 · 학생 작품 전시
+
+**문의처**  {ss.site_info['phone']}
+    """)
+    st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
 
 
@@ -1733,14 +1715,7 @@ def page_programs():
     st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
 
     admin = is_admin()
-    logged_in = is_logged_in_user()
     all_programs = fetch_programs()
-
-    if not logged_in:
-        all_programs = filter_public_after_4(all_programs, "time")
-        st.caption("비로그인 상태에서는 오후 4시 이후 프로그램만 표시됩니다. 전체 프로그램을 보려면 학생/교직원 로그인이 필요합니다.")
-    else:
-        st.caption("로그인한 학생·교직원은 전체 프로그램을 확인할 수 있습니다.")
 
     categories = ["전체", "공연", "체험", "전시", "기타"]
     cat = st.radio("카테고리", categories, horizontal=True, label_visibility="collapsed")
@@ -1852,16 +1827,10 @@ def page_program_add():
 # ----------------------------------------------------------------------
 def page_schedule():
     st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
+    st.caption("로그인 없이 누구나 확인할 수 있습니다.")
 
     admin = is_admin()
-    logged_in = is_logged_in_user()
     grouped = fetch_schedule_by_day()
-    if not logged_in:
-        grouped = {day: filter_public_after_4(items, "time") for day, items in grouped.items()}
-        grouped = {day: items for day, items in grouped.items() if items}
-        st.caption("비로그인 상태에서는 오후 4시 이후 시간표만 표시됩니다. 전체 시간표를 보려면 학생/교직원 로그인이 필요합니다.")
-    else:
-        st.caption("로그인한 학생·교직원은 전체 시간표를 확인할 수 있습니다.")
 
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     if not grouped:
@@ -2014,7 +1983,7 @@ def page_booths():
                     with st.expander("✏️ 이 부스 수정 / 삭제", expanded=False):
                         with st.form(f"booth_page_edit_form_{b['id']}"):
                             new_name = st.text_input("부스 이름", value=b["name"], key=f"bp_name_{b['id']}")
-                            new_cat = st.text_input("카테고리", value=b["category"], key=f"bp_cat_{b['id']}")
+                            new_cat = st.selectbox("카테고리", ["동아리 부스", "먹거리 부스"], index=0 if b.get("category") != "먹거리 부스" else 1, key=f"bp_cat_{b['id']}")
                             new_place = st.text_input("위치", value=b["place"], key=f"bp_place_{b['id']}")
                             new_hours = st.text_input("운영시간", value=b["hours"], key=f"bp_hours_{b['id']}")
                             new_desc = st.text_area("설명", value=b["desc"], key=f"bp_desc_{b['id']}")
@@ -2085,7 +2054,7 @@ def page_booth_add():
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     with st.form("booth_add_page_form"):
         bn = st.text_input("부스 이름")
-        bc = st.text_input("카테고리 (예: 음식/게임/체험/전시)")
+        bc = st.selectbox("카테고리", ["동아리 부스", "먹거리 부스"])
         bp = st.text_input("위치")
         bh = st.text_input("운영시간")
         bd = st.text_area("설명")
@@ -2151,7 +2120,13 @@ def page_notices():
     st.markdown('<div class="bk-section-title">📢 공지사항</div>', unsafe_allow_html=True)
 
     admin = is_admin()
-    notices = fetch_notices()
+    user = current_user()
+    notices = fetch_notices("member" if user is not None else "public")
+
+    if user is None:
+        st.caption("🔓 전체 공개 공지만 표시됩니다. 학생·교직원 전용 공지는 로그인 후 확인할 수 있습니다.")
+    else:
+        st.caption(f"🔐 {user['identity']} 로그인 상태 — 전체 공개 및 학생/교직원 전용 공지를 모두 확인할 수 있습니다.")
 
     st.markdown('<div class="bk-card">', unsafe_allow_html=True)
     if not notices:
@@ -2159,8 +2134,9 @@ def page_notices():
     else:
         for n in notices:
             badge = "<span class='bk-badge-new'>NEW</span>" if n.get("new") else ""
+            scope = "전체 공개" if n.get("visibility") == "all" else "학생/교직원 전용"
             with st.expander(f"{n['title']}   ({n['date']})"):
-                st.markdown(badge, unsafe_allow_html=True)
+                st.markdown(f"{badge} <span class='bk-chip'>{scope}</span>", unsafe_allow_html=True)
                 st.write(n["content"])
 
                 if admin:
@@ -2169,12 +2145,18 @@ def page_notices():
                         new_title = st.text_input("제목", value=n["title"], key=f"np_title_{n['id']}")
                         new_content = st.text_area("내용", value=n["content"], key=f"np_content_{n['id']}")
                         new_is_new = st.checkbox("NEW 표시", value=bool(n.get("new")), key=f"np_new_{n['id']}")
+                        new_visibility_label = st.radio(
+                            "공개 범위", ["전체 공개", "학생/교직원 전용"],
+                            index=0 if n.get("visibility") == "all" else 1,
+                            horizontal=True, key=f"np_vis_{n['id']}"
+                        )
+                        new_visibility = "all" if new_visibility_label == "전체 공개" else "members"
                         nec1, nec2 = st.columns(2)
                         save_clicked = nec1.form_submit_button("💾 저장", use_container_width=True)
                         delete_clicked = nec2.form_submit_button("🗑️ 삭제", use_container_width=True)
 
                     if save_clicked:
-                        ok, msg = update_notice(n["id"], new_title.strip() or n["title"], new_content, new_is_new)
+                        ok, msg = update_notice(n["id"], new_title.strip() or n["title"], new_content, new_is_new, new_visibility)
                         (st.success if ok else st.error)(msg)
                         if ok:
                             st.rerun()
@@ -2212,6 +2194,8 @@ def page_notice_add():
         t = st.text_input("제목")
         c = st.text_area("내용")
         is_new = st.checkbox("NEW 표시", value=True)
+        visibility_label = st.radio("공개 범위", ["전체 공개", "학생/교직원 전용"], horizontal=True)
+        visibility = "all" if visibility_label == "전체 공개" else "members"
         c1, c2 = st.columns(2)
         submit = c1.form_submit_button("등록", use_container_width=True)
         cancel = c2.form_submit_button("취소", use_container_width=True)
@@ -2223,13 +2207,98 @@ def page_notice_add():
         if not t.strip():
             st.error("제목을 입력해주세요.")
         else:
-            ok, msg = add_notice(t.strip(), c, is_new)
+            ok, msg = add_notice(t.strip(), c, is_new, visibility)
             if ok:
                 st.success(msg)
                 go("공지사항"); st.rerun()
             else:
                 st.error(msg)
 
+    st.markdown('</div>', unsafe_allow_html=True)
+    render_footer()
+
+
+# ----------------------------------------------------------------------
+# 페이지 : FAQ
+# ----------------------------------------------------------------------
+def page_faq():
+    st.markdown('<div class="bk-section-title">❓ FAQ</div>', unsafe_allow_html=True)
+    st.caption("축제 이용 중 자주 묻는 질문을 확인할 수 있습니다.")
+    faqs = fetch_faqs()
+    admin = is_admin()
+
+    if not faqs:
+        st.info("등록된 FAQ가 없습니다.")
+    else:
+        for faq in faqs:
+            with st.expander(f"❓ {faq['question']}"):
+                st.write(faq["answer"])
+                if admin:
+                    with st.form(f"faq_edit_{faq['id']}"):
+                        q = st.text_input("질문", value=faq["question"], key=f"faq_q_{faq['id']}")
+                        a = st.text_area("답변", value=faq["answer"], key=f"faq_a_{faq['id']}")
+                        c1, c2 = st.columns(2)
+                        save = c1.form_submit_button("💾 저장", use_container_width=True)
+                        delete = c2.form_submit_button("🗑️ 삭제", use_container_width=True)
+                    if save:
+                        if not q.strip() or not a.strip():
+                            st.error("질문과 답변을 모두 입력해주세요.")
+                        else:
+                            ok, msg = update_faq(faq["id"], q.strip(), a.strip())
+                            (st.success if ok else st.error)(msg)
+                            if ok: st.rerun()
+                    if delete:
+                        ok, msg = delete_faq(faq["id"])
+                        (st.success if ok else st.error)(msg)
+                        if ok: st.rerun()
+
+    if admin:
+        with st.expander("➕ FAQ 추가", expanded=False):
+            with st.form("faq_add_form"):
+                q = st.text_input("질문")
+                a = st.text_area("답변")
+                submit = st.form_submit_button("등록", use_container_width=True)
+            if submit:
+                if not q.strip() or not a.strip():
+                    st.error("질문과 답변을 모두 입력해주세요.")
+                else:
+                    ok, msg = add_faq(q.strip(), a.strip())
+                    (st.success if ok else st.error)(msg)
+                    if ok: st.rerun()
+
+    render_footer()
+
+
+# ----------------------------------------------------------------------
+# 페이지 : 랜덤 부스 추천
+# ----------------------------------------------------------------------
+def page_random():
+    st.markdown('<div class="bk-section-title">🎲 랜덤 부스 추천</div>', unsafe_allow_html=True)
+    booths = fetch_booths()
+    if not booths:
+        st.info("아직 등록된 부스가 없습니다.")
+        render_footer()
+        return
+
+    if "random_booth" not in ss:
+        ss.random_booth = None
+
+    st.markdown('<div class="bk-card" style="text-align:center;">', unsafe_allow_html=True)
+    st.markdown("### 🎲 어디로 갈까요?")
+    st.write("버튼을 누르면 운영 중인 부스 중 하나를 랜덤으로 추천합니다.")
+    if st.button("🎲 랜덤으로 뽑기", use_container_width=True):
+        ss.random_booth = random.choice(booths)
+
+    if ss.random_booth:
+        b = ss.random_booth
+        img_html = booth_media_html(b, height="220px")
+        st.markdown(
+            f"""<div style='margin-top:18px;'>{img_html}
+            <h2>{b['icon']} {b['name']}</h2>
+            <div class='bk-chip'>{b['category']}</div>
+            <p>📍 {b['place']} &nbsp;|&nbsp; 🕒 {b['hours']}</p>
+            <p>{b['desc']}</p></div>""", unsafe_allow_html=True
+        )
     st.markdown('</div>', unsafe_allow_html=True)
     render_footer()
 
@@ -2503,7 +2572,7 @@ def page_admin():
     if admin_client is None:
         st.warning("`secrets.toml` 에 `SUPABASE_SERVICE_KEY` 가 없어 일부 관리 기능(권한 부여/회수, 인증코드 발급, 공지/부스/프로그램/시간표 등록·수정·삭제)이 비활성화되어 있습니다.")
 
-    tabs = st.tabs(["🧑‍💻 사용자 관리", "🔑 권한 관리", "🔒 인증코드 관리", "📊 방문자 통계"])
+    tabs = st.tabs(["🧑‍💻 사용자 관리", "🔑 권한 관리", "🔒 인증코드 관리"])
 
     with tabs[0]:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
@@ -2573,7 +2642,7 @@ def page_admin():
         if admin_client is None:
             st.info("SUPABASE_SERVICE_KEY가 설정되면 인증코드 발급/비활성화를 사용할 수 있습니다.")
         else:
-            import random, string
+            import string
             st.markdown("**새 인증코드 발급**")
             with st.form("staff_code_new_form"):
                 new_code_name = st.text_input("담당 선생님 이름", placeholder="예: 김철수")
@@ -2592,35 +2661,6 @@ def page_admin():
                 if target_code != "선택 안함" and st.button("인증코드 비활성화"):
                     admin_client.table("staff_codes").update({"active": False}).eq("code", target_code).execute()
                     st.success("비활성화했습니다."); st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with tabs[3]:
-        st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-        st.subheader("방문자 통계")
-        st.caption("브라우저 세션(탭)당 1회 기록됩니다. IP 등 개인 식별 정보는 저장하지 않습니다.")
-
-        total = fetch_visit_total()
-        st.metric("누적 방문 수(세션 기준)", f"{total:,}")
-
-        daily = fetch_visit_daily(days=14)
-        if daily:
-            st.markdown("**최근 14일 일별 방문자 추이**")
-            st.bar_chart(daily)
-        else:
-            st.info("아직 최근 14일간의 방문 기록이 없습니다.")
-
-        st.markdown("---")
-        st.subheader("방문자 통계 삭제")
-        st.caption("누적 방문 수와 일별 방문 기록을 모두 삭제합니다. 삭제 후에는 되돌릴 수 없습니다.")
-        if admin_client is None:
-            st.info("SUPABASE_SERVICE_KEY가 설정되어 있어야 삭제할 수 있습니다.")
-        else:
-            confirm_delete = st.checkbox("방문자 통계를 모두 삭제하는 것에 동의합니다.", key="confirm_delete_visits")
-            if st.button("🗑️ 방문자 통계 전체 삭제", type="secondary", disabled=not confirm_delete, use_container_width=True):
-                ok, msg = delete_all_visits()
-                (st.success if ok else st.error)(msg)
-                if ok:
-                    st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.caption("📢 공지사항/부스/프로그램/시간표 등록·수정·삭제는 각각의 메뉴 화면에서 직접 할 수 있습니다 "
@@ -2649,14 +2689,13 @@ def render_footer():
 # 라우팅
 # ----------------------------------------------------------------------
 def main():
-    record_visit()
     handle_nav_query_param()
     render_topbar_and_drawer()
 
     routes = {
-        "메인": page_main, "프로그램": page_programs,
+        "메인": page_main, "축제 안내": page_intro, "프로그램": page_programs,
         "시간표": page_schedule, "부스 정보": page_booths, "오시는 길": page_directions,
-        "공지사항": page_notices, "인사말": page_greeting,
+        "공지사항": page_notices, "FAQ": page_faq, "랜덤 추천": page_random, "인사말": page_greeting,
         "로그인": page_login, "마이페이지": page_mypage, "관리자 페이지": page_admin,
         "부스 등록": page_booth_add, "공지사항 등록": page_notice_add,
         "프로그램 등록": page_program_add, "시간표 등록": page_schedule_add,
