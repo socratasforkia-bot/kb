@@ -420,7 +420,7 @@ MUTED = "#6B7280"
 
 CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Nanum+Myeongjo:wght@700;800&display=swap');
 
 html, body, [class*="css"]  {{
     font-family: 'Noto Sans KR', sans-serif;
@@ -769,31 +769,60 @@ hr {{border-color: #E5E7EF;}}
 }}
 .bk-pass-top {{
     position: relative;
-    background:
-        radial-gradient(circle at 14% 12%, rgba(255,255,255,0.06) 0, rgba(255,255,255,0) 40%),
-        linear-gradient(160deg, {NAVY} 0%, {NAVY_2} 100%);
-    padding: 34px 24px 30px 24px;
+    background: linear-gradient(160deg, {NAVY} 0%, {NAVY_2} 100%);
+    padding: 48px 28px 42px 28px;
     text-align: center;
     color: #fff;
+    overflow: hidden;
 }}
-.bk-pass-eyebrow {{
-    font-size: 12px;
-    letter-spacing: 3px;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 14px;
+.bk-pass-corner {{
+    position: absolute;
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 1;
 }}
-.bk-pass-emblem-ring {{
-    width: 108px;
-    height: 108px;
-    border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 50%;
+.bk-pass-corner-tl {{
+    top: 16px;
+    left: 16px;
+}}
+.bk-pass-corner-br {{
+    bottom: 16px;
+    right: 16px;
+    transform: rotate(180deg);
+}}
+.bk-pass-emblem {{
+    width: 132px;
+    height: 132px;
+    object-fit: contain;
+    margin: 0 auto 16px auto;
+    display: block;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+}}
+.bk-pass-title-main {{
+    font-family: 'Nanum Myeongjo', 'Noto Sans KR', serif;
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    margin: 2px 0 18px 0;
+    position: relative;
+    z-index: 2;
+}}
+.bk-pass-deco-row {{
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 16px auto;
-    background: rgba(255,255,255,0.03);
+    gap: 10px;
+    color: rgba(255,255,255,0.55);
+    position: relative;
+    z-index: 2;
 }}
-.bk-pass-emblem-ring img {{
+.bk-pass-deco-row .bk-pass-deco-line {{
+    height: 1px;
+    width: 70px;
+    background: rgba(255,255,255,0.3);
+}}.bk-pass-emblem-ring img {{
     width: 66px;
     height: 66px;
     object-fit: contain;
@@ -1810,15 +1839,30 @@ def page_visitor_pass():
     else:
         name_html = '<div class="bk-pass-name-box empty">👤 아래에서 이름을 입력하면 방문증에 표시됩니다</div>'
 
+       corner_svg = """
+    <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="12" height="12" fill="#5D7FBE"/>
+        <rect x="0" y="12" width="12" height="12" fill="#5D7FBE"/>
+        <rect x="12" y="0" width="12" height="12" fill="#5D7FBE"/>
+        <rect x="32" y="4" width="10" height="10" fill="#FFFFFF"/>
+        <rect x="32" y="14" width="10" height="10" fill="#FFFFFF"/>
+        <rect x="42" y="4" width="10" height="10" fill="#FFFFFF"/>
+        <rect x="62" y="9" width="6" height="6" fill="#FFFFFF"/>
+        <rect x="3" y="32" width="10" height="10" fill="#FFFFFF"/>
+        <rect x="3" y="42" width="10" height="10" fill="#FFFFFF"/>
+        <rect x="13" y="32" width="10" height="10" fill="#5D7FBE"/>
+        <rect x="5" y="62" width="6" height="6" fill="#FFFFFF"/>
+    </svg>
+    """
+
     st.markdown(
         f"""
         <div class="bk-pass-wrap">
             <div class="bk-pass-card">
                 <div class="bk-pass-top">
-                    <div class="bk-pass-eyebrow">DIGITAL VISITOR PASS</div>
-                    <div class="bk-pass-emblem-ring">
-                        <img src="{LOGO_DATA_URI}" alt="경복고등학교 로고">
-                    </div>
+                    <div class="bk-pass-corner bk-pass-corner-tl">{corner_svg}</div>
+                    <div class="bk-pass-corner bk-pass-corner-br">{corner_svg}</div>
+                    <img src="{LOGO_DATA_URI}" class="bk-pass-emblem" alt="경복고등학교 로고">
                     <div class="bk-pass-title-main">{FESTIVAL_NAME}</div>
                     <div class="bk-pass-deco-row">
                         <span class="bk-pass-deco-line"></span>
