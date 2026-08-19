@@ -1567,7 +1567,7 @@ def page_main():
                 <h1>경복고등학교 {FESTIVAL_NAME}</h1>
                 <div class="slogan">{FESTIVAL_SLOGAN}</div>
                 <div class="meta">📅 {FESTIVAL_DATE.strftime('%Y. %m. %d')}(금)</div>
-                <div class="meta">📍 경복고등학교 교내 일대</div>
+                <div class="meta">📍 경복고등학교 교내</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -2854,7 +2854,7 @@ def render_footer():
         f"""
         <div class="bk-footer">
             <b>📮 문의 및 안내</b><br>
-            📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;|&nbsp;
+            📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;
         </div>
         """,
         unsafe_allow_html=True,
