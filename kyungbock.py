@@ -1586,24 +1586,33 @@ def page_main():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 프로그램은 기본적으로 메인 페이지에 표시하지 않습니다.
-    # 관리자가 프로그램을 등록했을 때만 등록된 내용이 메인에 나타납니다.
+    # 메인 페이지 프로그램 박스
+    # 프로그램이 없어도 박스 자체는 항상 표시해, 메인 화면에서 프로그램 영역을 바로 확인할 수 있게 합니다.
     main_programs = fetch_programs()
+    st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
+    st.markdown('<div class="bk-card">', unsafe_allow_html=True)
+
     if main_programs:
-        st.markdown('<div class="bk-section-title">🎤 프로그램</div>', unsafe_allow_html=True)
-        st.markdown('<div class="bk-card">', unsafe_allow_html=True)
         for p in main_programs[:4]:
             st.markdown(
-                f"<div style='padding:8px 0;border-bottom:1px solid #EEF0F5;'>"
-                f"<b>{p['icon']} {p['name']}</b> "
-                f"<span style='color:{MUTED};font-size:13px;'>· {p['date']} {p['time']} · {p['place']}</span></div>",
+                f"<div style='padding:10px 0;border-bottom:1px solid #EEF0F5;'>"
+                f"<div style='font-weight:800;font-size:15px;'>{p['icon']} {p['name']}</div>"
+                f"<div style='color:{MUTED};font-size:13px;margin-top:3px;'>"
+                f"{p['date']} · {p['time']} · {p['place']}</div></div>",
                 unsafe_allow_html=True,
             )
+    else:
         st.markdown(
-            f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
+            f"<div style='padding:16px 0;color:{MUTED};font-size:14px;'>"
+            "등록된 프로그램이 없습니다.</div>",
             unsafe_allow_html=True,
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        f"<a class='bk-card-btn' href='?nav={SLUG_BY_NAME['프로그램']}' target='_self'>전체 프로그램 보기 →</a>",
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # 시간표도 DB에 등록된 내용만 표시합니다.
     st.markdown('<div class="bk-section-title">📅 시간표</div>', unsafe_allow_html=True)
@@ -2180,17 +2189,21 @@ def page_directions():
     c1, c2 = st.columns([1.4, 1])
 
     with c1:
-        # 중요한 위치만 보여주는 간결한 지도입니다.
-        # 축소는 경복궁역이 보이는 범위까지만 허용합니다.
+        # 중요한 위치만 표시하고, 지도 중심은 항상 경복고등학교로 잡습니다.
+        # 표시 항목: 경복고등학교 / 학교 앞 100m / 통인시장 / 경복궁역
         school_lat = 37.5876963
         school_lon = 126.9717003
         station_lat = 37.575804
         station_lon = 126.973576
 
+        # 통인시장(서울 종로구 자하문로15길 18) 위치
+        market_lat = 37.58035
+        market_lon = 126.96955
+
         fmap = folium.Map(
-            location=[(school_lat + station_lat) / 2, (school_lon + station_lon) / 2],
-            zoom_start=15,
-            min_zoom=15,
+            location=[school_lat, school_lon],
+            zoom_start=14,
+            min_zoom=14,
             max_zoom=17,
             control_scale=False,
             zoom_control=True,
@@ -2199,7 +2212,7 @@ def page_directions():
             height=360,
         )
 
-        # 핵심 정보 ① 경복고등학교
+        # ① 경복고등학교 — 지도 중심
         folium.Marker(
             [school_lat, school_lon],
             tooltip="경복고등학교",
@@ -2210,7 +2223,36 @@ def page_directions():
             icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
         ).add_to(fmap)
 
-        # 핵심 정보 ② 경복궁역
+        # ② 학교 앞 100m — 학교 주변 행사 구역을 한눈에 확인
+        folium.Circle(
+            [school_lat, school_lon],
+            radius=100,
+            color="#E67E22",
+            weight=2,
+            fill=True,
+            fill_opacity=0.08,
+            tooltip="학교 앞 100m",
+        ).add_to(fmap)
+
+        folium.Marker(
+            [school_lat + 0.00055, school_lon],
+            tooltip="학교 앞 100m",
+            popup=folium.Popup("<b>학교 앞 100m</b><br>경복고등학교 기준 반경 100m", max_width=240),
+            icon=folium.Icon(color="orange", icon="info-sign"),
+        ).add_to(fmap)
+
+        # ③ 통인시장
+        folium.Marker(
+            [market_lat, market_lon],
+            tooltip="통인시장",
+            popup=folium.Popup(
+                "<b>통인시장</b><br>서울 종로구 자하문로15길 18",
+                max_width=240,
+            ),
+            icon=folium.Icon(color="green", icon="shopping-cart", prefix="fa"),
+        ).add_to(fmap)
+
+        # ④ 경복궁역
         folium.Marker(
             [station_lat, station_lon],
             tooltip="경복궁역",
@@ -2221,11 +2263,14 @@ def page_directions():
             icon=folium.Icon(color="red", icon="subway", prefix="fa"),
         ).add_to(fmap)
 
-        # 학교와 경복궁역이 함께 보이는 범위로 고정하고 불필요한 주변 표시를 최소화합니다.
+        # 전체 범위도 경복고등학교가 시각적으로 중심이 되도록 고정합니다.
         fmap.fit_bounds(
-            [[station_lat, station_lon], [school_lat, school_lon]],
-            padding=(20, 20),
-            max_zoom=15,
+            [
+                [school_lat - 0.008, school_lon - 0.006],
+                [school_lat + 0.008, school_lon + 0.006],
+            ],
+            padding=(10, 10),
+            max_zoom=14,
         )
 
         map_html = fmap.get_root().render()
