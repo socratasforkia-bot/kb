@@ -2854,7 +2854,7 @@ def render_footer():
         f"""
         <div class="bk-footer">
             <b>📮 문의 및 안내</b><br>
-            📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;|&nbsp; 🕒 {ss.site_info['hours']}<br>
+            📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;|&nbsp;
         </div>
         """,
         unsafe_allow_html=True,
