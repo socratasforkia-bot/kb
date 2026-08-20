@@ -178,6 +178,17 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
 """
 
 import streamlit as st
+
+# ----------------------------------------------------------------------
+# Render / 최신 Streamlit + streamlit-cookies-manager 호환성 패치
+# streamlit-cookies-manager가 내부적으로 오래된 @st.cache를 사용하므로
+# 라이브러리를 유지하면서 최신 Streamlit에서도 동작하도록 연결합니다.
+# 반드시 streamlit_cookies_manager import보다 먼저 실행되어야 합니다.
+# ----------------------------------------------------------------------
+if not hasattr(st, "cache"):
+    st.cache = st.cache_data
+
+import os
 import base64
 from io import BytesIO
 from PIL import Image
@@ -270,30 +281,23 @@ def _debug_secret_paths() -> str:
 
 
 def _get_secret(key: str, required: bool = True, default=None):
-    try:
-        val = st.secrets.get(key)
-    except Exception:
-        val = None
-        if required:
-            st.error(
-                "`secrets.toml` 파일을 찾을 수 없습니다.\n\n"
-                "다음 경로들을 확인해봤습니다.\n\n"
-                f"{_debug_secret_paths()}\n\n"
-                "파일이 아예 없다면 스크립트가 있는 폴더 밑에 `.streamlit` 폴더를 만들고 "
-                "그 안에 `secrets.toml` 파일을 아래 형식으로 만들어주세요.\n\n"
-                "```\n"
-                "SUPABASE_URL = \"https://xxxxxxxxxxxx.supabase.co\"\n"
-                "SUPABASE_ANON_KEY = \"anon 키\"\n"
-                "SUPABASE_SERVICE_KEY = \"service_role 키 (선택)\"\n"
-                "```"
-            )
-            st.stop()
+    # Render에서는 Environment Variables를 우선 사용합니다.
+    # 로컬에서는 기존 .streamlit/secrets.toml도 그대로 사용할 수 있습니다.
+    val = os.getenv(key)
+
+    if not val:
+        try:
+            val = st.secrets.get(key)
+        except Exception:
+            val = None
+
     if required and not val:
         st.error(
-            f"`.streamlit/secrets.toml` 에 `{key}` 값이 설정되어 있지 않습니다.\n\n"
-            "함께 받은 `supabase_setup.sql` 안내와 secrets.toml 예시를 참고해 설정해주세요."
+            f"환경변수 또는 secrets.toml에 `{key}` 값이 설정되어 있지 않습니다.\\n\\n"
+            "Render에서는 Dashboard → Environment에 해당 변수를 추가해주세요."
         )
         st.stop()
+
     if not val:
         return default
     return val
@@ -309,9 +313,8 @@ COOKIE_PASSWORD = _get_secret(
 )
 if COOKIE_PASSWORD == "bukakje-insecure-default-change-me-in-secrets-toml":
     st.warning(
-        "⚠️ `secrets.toml` 에 `COOKIE_PASSWORD` 가 설정되어 있지 않아 "
-        "임시 기본값을 사용합니다. 서버를 재시작하면 로그인 유지 쿠키가 무효화될 수 있으니 "
-        "`COOKIE_PASSWORD = \"아무 긴 임의 문자열\"` 을 secrets.toml에 추가해주세요.",
+        "⚠️ COOKIE_PASSWORD가 설정되어 있지 않아 임시 기본값을 사용합니다. "
+        "Render에서는 Environment에 COOKIE_PASSWORD를 추가해주세요.",
         icon="⚠️",
     )
 
