@@ -2293,19 +2293,7 @@ def page_directions():
             icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
         ).add_to(fmap)
 
-        # ② 학교 앞 위치 표시 — 반경 원은 표시하지 않습니다.
-        # ③ 통인시장
-        folium.Marker(
-            [market_lat, market_lon],
-            tooltip="통인시장",
-            popup=folium.Popup(
-                "<b>통인시장</b><br>서울 종로구 자하문로15길 18",
-                max_width=240,
-            ),
-            icon=folium.Icon(color="green", icon="shopping-cart", prefix="fa"),
-        ).add_to(fmap)
-
-        # ④ 경복궁역
+        # ② 경복궁역
         folium.Marker(
             [station_lat, station_lon],
             tooltip="경복궁역",
