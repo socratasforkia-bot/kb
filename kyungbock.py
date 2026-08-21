@@ -178,12 +178,42 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
 """
 
 import streamlit as st
+# ============================================================
+# Render / Streamlit / Cookie Manager compatibility
+# ============================================================
 import os
 
-# 최신 Streamlit과 streamlit-cookies-manager 호환 패치
-# 구버전 쿠키 매니저가 사용하는 @st.cache를 최신 @st.cache_data에 연결합니다.
+# streamlit-cookies-manager uses the removed st.cache API.
+# Keep the cookie manager and provide the compatibility alias first.
 if not hasattr(st, "cache"):
     st.cache = st.cache_data
+
+# Render Environment Variables first; local secrets.toml fallback.
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+COOKIE_PASSWORD = os.environ.get("COOKIE_PASSWORD", "")
+
+try:
+    if not SUPABASE_URL:
+        SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
+    if not SUPABASE_ANON_KEY:
+        SUPABASE_ANON_KEY = st.secrets.get("SUPABASE_ANON_KEY", "")
+    if not SUPABASE_SERVICE_KEY:
+        SUPABASE_SERVICE_KEY = st.secrets.get("SUPABASE_SERVICE_KEY", "")
+    if not COOKIE_PASSWORD:
+        COOKIE_PASSWORD = st.secrets.get("COOKIE_PASSWORD", "")
+except Exception:
+    pass
+
+if not COOKIE_PASSWORD:
+    COOKIE_PASSWORD = "bukakje-cookie-password-change-this"
+
+SUPABASE_URL = str(SUPABASE_URL).strip().strip('"').strip("'")
+SUPABASE_ANON_KEY = str(SUPABASE_ANON_KEY).strip().strip('"').strip("'")
+SUPABASE_SERVICE_KEY = str(SUPABASE_SERVICE_KEY).strip().strip('"').strip("'")
+COOKIE_PASSWORD = str(COOKIE_PASSWORD).strip().strip('"').strip("'")
+
 import base64
 from io import BytesIO
 from PIL import Image
@@ -275,62 +305,23 @@ def _debug_secret_paths() -> str:
     return "\n".join(lines)
 
 
-def _get_secret(key: str, required: bool = True, default=None):
-    """
-    Render에서는 Environment Variables를 우선 사용하고,
-    로컬에서는 기존 .streamlit/secrets.toml도 사용할 수 있게 합니다.
-    """
-    # 1) Render / 일반 OS 환경변수
-    val = os.environ.get(key)
-
-    # 2) 로컬 Streamlit secrets.toml
-    if not val:
-        try:
-            val = st.secrets.get(key)
-        except Exception:
-            val = None
-
-    if not val:
-        if required:
-            st.error(
-                f"환경변수 또는 Streamlit secrets에 `{key}`가 설정되어 있지 않습니다.\n\n"
-                "Render를 사용하는 경우 Dashboard → Environment에서 해당 값을 추가해주세요."
-            )
-            st.stop()
-        return default
-
-    return val
-
-
-SUPABASE_URL = _get_secret("SUPABASE_URL")
-SUPABASE_ANON_KEY = _get_secret("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = _get_secret("SUPABASE_SERVICE_KEY", required=False, default="")
-
-# 쿠키 암호화 키
-# Render에서는 반드시 COOKIE_PASSWORD 환경변수를 설정하세요.
-COOKIE_PASSWORD = _get_secret(
-    "COOKIE_PASSWORD",
-    required=False,
-    default="bukakje-cookie-password-change-this",
-)
-
-if COOKIE_PASSWORD == "bukakje-cookie-password-change-this":
-    st.warning(
-        "⚠️ Render Environment에 COOKIE_PASSWORD가 설정되어 있지 않습니다. "
-        "로그인 유지 쿠키를 안정적으로 사용하려면 COOKIE_PASSWORD를 추가해주세요.",
-        icon="⚠️",
-    )
-
-
 def get_user_client() -> "Client":
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise RuntimeError(
+            "Supabase 환경변수가 없습니다. Render Environment에서 "
+            "SUPABASE_URL과 SUPABASE_ANON_KEY를 확인하세요."
+        )
     if "sb_client" not in st.session_state:
-        st.session_state.sb_client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        st.session_state.sb_client = create_client(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+        )
     return st.session_state.sb_client
 
 
 @st.cache_resource
 def get_admin_client():
-    if not SUPABASE_SERVICE_KEY:
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return None
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
