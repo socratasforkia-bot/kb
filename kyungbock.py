@@ -178,17 +178,12 @@ DB 준비 (Supabase SQL Editor에서 한 번 실행):
 """
 
 import streamlit as st
+import os
 
-# ----------------------------------------------------------------------
-# Render / 최신 Streamlit + streamlit-cookies-manager 호환성 패치
-# streamlit-cookies-manager가 내부적으로 오래된 @st.cache를 사용하므로
-# 라이브러리를 유지하면서 최신 Streamlit에서도 동작하도록 연결합니다.
-# 반드시 streamlit_cookies_manager import보다 먼저 실행되어야 합니다.
-# ----------------------------------------------------------------------
+# 최신 Streamlit과 streamlit-cookies-manager 호환 패치
+# 구버전 쿠키 매니저가 사용하는 @st.cache를 최신 @st.cache_data에 연결합니다.
 if not hasattr(st, "cache"):
     st.cache = st.cache_data
-
-import os
 import base64
 from io import BytesIO
 from PIL import Image
@@ -280,90 +275,65 @@ def _debug_secret_paths() -> str:
     return "\n".join(lines)
 
 
-# ----------------------------------------------------------------------
-# Supabase 환경변수 / Secrets 안전하게 읽기
-# ----------------------------------------------------------------------
 def _get_secret(key: str, required: bool = True, default=None):
-    value = None
+    """
+    Render에서는 Environment Variables를 우선 사용하고,
+    로컬에서는 기존 .streamlit/secrets.toml도 사용할 수 있게 합니다.
+    """
+    # 1) Render / 일반 OS 환경변수
+    val = os.environ.get(key)
 
-    # 1. Render 환경변수 확인
-    try:
-        value = os.environ.get(key)
-    except Exception:
-        value = None
-
-    # 빈 문자열이면 secrets.toml 확인
-    if value is None or str(value).strip() == "":
+    # 2) 로컬 Streamlit secrets.toml
+    if not val:
         try:
-            value = st.secrets.get(key)
+            val = st.secrets.get(key)
         except Exception:
-            value = None
+            val = None
 
-    # 값 정리
-    if value is not None:
-        value = str(value).strip()
-
-        # 환경변수에 실수로 큰따옴표까지 포함한 경우 제거
-        if len(value) >= 2:
-            if (
-                (value.startswith('"') and value.endswith('"'))
-                or
-                (value.startswith("'") and value.endswith("'"))
-            ):
-                value = value[1:-1].strip()
-
-    if not value:
+    if not val:
         if required:
             st.error(
-                f"Supabase 설정값 `{key}`를 찾을 수 없습니다.\n\n"
-                "Render Environment 또는 Streamlit secrets.toml을 확인해주세요."
+                f"환경변수 또는 Streamlit secrets에 `{key}`가 설정되어 있지 않습니다.\n\n"
+                "Render를 사용하는 경우 Dashboard → Environment에서 해당 값을 추가해주세요."
             )
             st.stop()
-
         return default
 
-    return value
+    return val
 
 
-# ----------------------------------------------------------------------
-# Supabase 설정
-# ----------------------------------------------------------------------
 SUPABASE_URL = _get_secret("SUPABASE_URL")
 SUPABASE_ANON_KEY = _get_secret("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = _get_secret(
-    "SUPABASE_SERVICE_KEY",
+SUPABASE_SERVICE_KEY = _get_secret("SUPABASE_SERVICE_KEY", required=False, default="")
+
+# 쿠키 암호화 키
+# Render에서는 반드시 COOKIE_PASSWORD 환경변수를 설정하세요.
+COOKIE_PASSWORD = _get_secret(
+    "COOKIE_PASSWORD",
     required=False,
-    default=None
+    default="bukakje-cookie-password-change-this",
 )
 
-# URL 끝의 / 제거
-SUPABASE_URL = SUPABASE_URL.rstrip("/")
-
-
-# ----------------------------------------------------------------------
-# Supabase 일반 사용자 클라이언트
-# ----------------------------------------------------------------------
-def get_user_client() -> "Client":
-    # 잘못된 기존 세션 클라이언트를 계속 재사용하지 않도록
-    # 현재 실행 중인 키와 URL 기준으로 새 클라이언트 생성
-    return create_client(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
+if COOKIE_PASSWORD == "bukakje-cookie-password-change-this":
+    st.warning(
+        "⚠️ Render Environment에 COOKIE_PASSWORD가 설정되어 있지 않습니다. "
+        "로그인 유지 쿠키를 안정적으로 사용하려면 COOKIE_PASSWORD를 추가해주세요.",
+        icon="⚠️",
     )
 
 
-# ----------------------------------------------------------------------
-# Supabase 관리자 클라이언트
-# ----------------------------------------------------------------------
+def get_user_client() -> "Client":
+    if "sb_client" not in st.session_state:
+        st.session_state.sb_client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    return st.session_state.sb_client
+
+
 @st.cache_resource
 def get_admin_client():
     if not SUPABASE_SERVICE_KEY:
         return None
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-    return create_client(
-        SUPABASE_URL,
-        SUPABASE_SERVICE_KEY
-    )
 
 def student_email(student_no: str) -> str:
     return f"student-{student_no.strip()}@{FAKE_EMAIL_DOMAIN}"
