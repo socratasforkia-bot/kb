@@ -2980,7 +2980,7 @@ def page_admin():
 # 푸터
 # ----------------------------------------------------------------------
 def render_footer():
-    st.markdown(
+    st.markdown("""
         📮 <b>문의 및 안내</b><br>
         📞 02-397-5301<br>
         ✉️ kb.bukakfestival@gmail.com
