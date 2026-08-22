@@ -2259,14 +2259,11 @@ def page_directions():
     c1, c2 = st.columns([1.4, 1])
 
     with c1:
-        # 중요한 위치만 표시하고, 지도 중심은 항상 경복고등학교로 잡습니다.
-        # 표시 항목: 경복고등학교 / 학교 앞 100m / 통인시장 / 경복궁역
         school_lat = 37.5876963
         school_lon = 126.9717003
         station_lat = 37.575804
         station_lon = 126.973576
 
-        # 통인시장(서울 종로구 자하문로15길 18) 위치
         market_lat = 37.58035
         market_lon = 126.96955
 
@@ -2304,7 +2301,17 @@ def page_directions():
             icon=folium.Icon(color="red", icon="subway", prefix="fa"),
         ).add_to(fmap)
 
-        # 전체 범위도 경복고등학교가 시각적으로 중심이 되도록 고정합니다.
+        # 경복궁역 3번 출구
+        folium.Marker(
+            [station_lat, station_lon],
+            tooltip="경복궁역 3번 출구",
+            popup=folium.Popup(
+                "<b>경복궁역 3번 출구</b>",
+                max_width=220,
+            ),
+            icon=folium.Icon(color="green", icon="bus", prefix="fa"),
+        ).add_to(fmap)
+
         fmap.fit_bounds(
             [
                 [school_lat - 0.0022, school_lon - 0.0022],
@@ -2321,7 +2328,9 @@ def page_directions():
 
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-        st.write(f"**주소**\n\n{ss.site_info['address']}")
+        st.write(f"**주소**
+
+{ss.site_info['address']}")
         st.markdown("---")
         st.markdown(f"<div style='font-weight:900;font-size:16px;'>🚇 3호선 경복궁역 3번 출구</div><div style='font-weight:800;margin:6px 0 14px;'>경복궁역 3번 출구 도보 약 15분</div>", unsafe_allow_html=True)
         st.markdown("<div style='font-weight:900;font-size:16px;'>🚌 버스</div><div style='font-weight:800;line-height:1.8;'>7022 · 7212 · 1020 → 경복고등학교<br>8111 · 7016 · 7018 → 효자동</div>", unsafe_allow_html=True)
