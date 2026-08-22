@@ -2290,10 +2290,11 @@ def page_directions():
         station_lat = 37.575804
         station_lon = 126.973576
 
-        # ② 경복궁역 3번출구 버스정류장: 역과 별도의 위치
+        # ② 경복궁역 3번출구 버스정류장: 경복궁역과 완전히 다른 위치
         # 정류소 ID: 01-116
-        bus_stop_lat = 37.57608
-        bus_stop_lon = 126.97320
+        # 사직로 125(적선동) 부근의 실제 3번출구 버스정류장 위치
+        bus_stop_lat = 37.576077392725
+        bus_stop_lon = 126.97289815092
 
         fmap = folium.Map(
             location=[37.5810, 126.9723],
@@ -2348,9 +2349,9 @@ def page_directions():
         # ③ 경복궁역 3번출구 버스정류장 — 경복궁역과 다른 장소
         folium.Marker(
             [bus_stop_lat, bus_stop_lon],
-            tooltip="경복궁역 3번출구 버스정류장",
+            tooltip="경복궁역 3번출구 버스정류장 (01-116)",
             popup=folium.Popup(
-                "<b>경복궁역 3번출구 버스정류장</b><br>정류소 번호 01-116<br>1020 · 1711 · 7016 · 7018 · 7022 · 7212 · 8111",
+                "<b>경복궁역 3번출구 버스정류장</b><br>정류소 번호 01-116<br>서울 종로구 사직로 125<br>1020 · 1711 · 7016 · 7018 · 7022 · 7212 · 8111",
                 max_width=300,
             ),
             icon=folium.Icon(
