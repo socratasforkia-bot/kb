@@ -1940,7 +1940,15 @@ def page_programs():
             '<a class="bk-fab" href="?nav=program_add" target="_self" title="프로그램 추가">+</a>',
             unsafe_allow_html=True,
         )
-        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
+        st.markdown(
+            """
+            <div style='font-weight:900;font-size:16px;'>📞 전화</div>
+            <div style='font-weight:800;margin:4px 0 12px;'>02-397-5301</div>
+            <div style='font-weight:900;font-size:16px;'>✉️ 메일</div>
+            <div style='font-weight:800;'>kb.bukakfestival@gmail.com</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     render_footer()
 
@@ -2056,7 +2064,15 @@ def page_schedule():
             '<a class="bk-fab" href="?nav=schedule_add" target="_self" title="시간표 추가">+</a>',
             unsafe_allow_html=True,
         )
-        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
+        st.markdown(
+            """
+            <div style='font-weight:900;font-size:16px;'>📞 전화</div>
+            <div style='font-weight:800;margin:4px 0 12px;'>02-397-5301</div>
+            <div style='font-weight:900;font-size:16px;'>✉️ 메일</div>
+            <div style='font-weight:800;'>kb.bukakfestival@gmail.com</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     render_footer()
 
@@ -2205,7 +2221,15 @@ def page_booths():
             '<a class="bk-fab" href="?nav=booth_add" target="_self" title="부스 추가">+</a>',
             unsafe_allow_html=True,
         )
-        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
+        st.markdown(
+            """
+            <div style='font-weight:900;font-size:16px;'>📞 전화</div>
+            <div style='font-weight:800;margin:4px 0 12px;'>02-397-5301</div>
+            <div style='font-weight:900;font-size:16px;'>✉️ 메일</div>
+            <div style='font-weight:800;'>kb.bukakfestival@gmail.com</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     render_footer()
 
@@ -2328,9 +2352,9 @@ def page_directions():
 
     with c2:
         st.markdown('<div class="bk-card">', unsafe_allow_html=True)
-        st.write(f"**주소**
+        st.write(f"""**주소**
 
-{ss.site_info['address']}")
+{ss.site_info['address']}""")
         st.markdown("---")
         st.markdown(f"<div style='font-weight:900;font-size:16px;'>🚇 3호선 경복궁역 3번 출구</div><div style='font-weight:800;margin:6px 0 14px;'>경복궁역 3번 출구 도보 약 15분</div>", unsafe_allow_html=True)
         st.markdown("<div style='font-weight:900;font-size:16px;'>🚌 버스</div><div style='font-weight:800;line-height:1.8;'>7022 · 7212 · 1020 → 경복고등학교<br>8111 · 7016 · 7018 → 효자동</div>", unsafe_allow_html=True)
@@ -2399,7 +2423,15 @@ def page_notices():
             '<a class="bk-fab" href="?nav=notice_add" target="_self" title="공지사항 추가">+</a>',
             unsafe_allow_html=True,
         )
-        st.caption("문의 및 안내: 02-397-5301 · kb.bukakfestival@gmail.com")
+        st.markdown(
+            """
+            <div style='font-weight:900;font-size:16px;'>📞 전화</div>
+            <div style='font-weight:800;margin:4px 0 12px;'>02-397-5301</div>
+            <div style='font-weight:900;font-size:16px;'>✉️ 메일</div>
+            <div style='font-weight:800;'>kb.bukakfestival@gmail.com</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     render_footer()
 
