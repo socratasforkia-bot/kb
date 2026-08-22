@@ -2293,8 +2293,8 @@ def page_directions():
         # ② 경복궁역 3번출구 버스정류장
         # 정류소 번호: 100000020 / 데이터 라인 연계 ID: 100000021
         # 제공받은 정류장 좌표(Y, X)를 그대로 사용
-        bus_stop_lat = 37.577040
-        bus_stop_lon = 126.972419
+        bus_stop_lat = 37.5776713863
+        bus_stop_lon = 126.9722828893
 
         fmap = folium.Map(
             location=[37.5810, 126.9723],
