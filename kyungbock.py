@@ -1584,7 +1584,7 @@ def page_main():
         st.markdown(
             f"""
             <div class="bk-hero">
-                <div class="eyebrow">2025</div>
+                <div class="eyebrow">2026</div>
                 <h1>경복고등학교 {FESTIVAL_NAME}</h1>
                 <div class="slogan">{FESTIVAL_SLOGAN}</div>
                 <div class="meta">📅 {FESTIVAL_DATE.strftime('%Y. %m. %d')}(금)</div>
@@ -2981,16 +2981,11 @@ def page_admin():
 # ----------------------------------------------------------------------
 def render_footer():
     st.markdown(
-        f"""
-        <div class="bk-footer">
-            <b>📮 문의 및 안내</b><br>
-            📞 {ss.site_info['phone']} &nbsp;|&nbsp; ✉️ {ss.site_info['email']} &nbsp;
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
+        📮 <b>문의 및 안내</b><br>
+        📞 02-397-5301<br>
+        ✉️ kb.bukakfestival@gmail.com
+        """, unsafe_allow_html=True)
+        
 # ----------------------------------------------------------------------
 # 라우팅
 # ----------------------------------------------------------------------
