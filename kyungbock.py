@@ -2286,29 +2286,36 @@ def page_directions():
         school_lat = 37.5876963
         school_lon = 126.9717003
 
-        # 지하철역 자체의 위치
+        # ① 경복궁역: 지하철역 자체
         station_lat = 37.575804
         station_lon = 126.973576
 
-        # 경복궁역 3번 출구 버스정류장
-        # ※ 경복궁역(지하철역)과 경복궁역 3번출구 버스정류장은 별개의 장소입니다.
-        # 버스정류소 번호: 01-116
+        # ② 경복궁역 3번출구 버스정류장: 역과 별도의 위치
+        # 정류소 ID: 01-116
         bus_stop_lat = 37.57608
         bus_stop_lon = 126.97320
 
         fmap = folium.Map(
-            location=[school_lat, school_lon],
-            zoom_start=16,
-            min_zoom=15,
-            max_zoom=18,
+            location=[37.5810, 126.9723],
+            zoom_start=15,
+            min_zoom=14,
+            max_zoom=19,
             control_scale=False,
             zoom_control=True,
-            tiles="OpenStreetMap",
+            tiles=None,
             width="100%",
-            height=360,
+            height="360px",
         )
 
-        # ① 경복고등학교 — 지도 중심
+        # OpenStreetMap 기본 지도 타일을 직접 추가
+        folium.TileLayer(
+            tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            attr="© OpenStreetMap contributors",
+            name="OpenStreetMap",
+            control=False,
+        ).add_to(fmap)
+
+        # ① 경복고등학교
         folium.Marker(
             [school_lat, school_lon],
             tooltip="경복고등학교",
@@ -2338,13 +2345,13 @@ def page_directions():
             ),
         ).add_to(fmap)
 
-        # ③ 경복궁역 3번출구 버스정류장 — 경복궁역과 별도 장소
+        # ③ 경복궁역 3번출구 버스정류장 — 경복궁역과 다른 장소
         folium.Marker(
             [bus_stop_lat, bus_stop_lon],
             tooltip="경복궁역 3번출구 버스정류장",
             popup=folium.Popup(
                 "<b>경복궁역 3번출구 버스정류장</b><br>정류소 번호 01-116<br>1020 · 1711 · 7016 · 7018 · 7022 · 7212 · 8111",
-                max_width=280,
+                max_width=300,
             ),
             icon=folium.Icon(
                 color="green",
@@ -2353,20 +2360,28 @@ def page_directions():
             ),
         ).add_to(fmap)
 
+        # 학교·지하철역·버스정류장이 모두 화면에 들어오도록 범위 설정
         fmap.fit_bounds(
             [
-                [school_lat - 0.0022, school_lon - 0.0022],
-                [school_lat + 0.0022, school_lon + 0.0022],
+                [school_lat, school_lon],
+                [station_lat, station_lon],
+                [bus_stop_lat, bus_stop_lon],
             ],
-            padding=(8, 8),
-            max_zoom=16,
+            padding=(25, 25),
         )
 
         map_html = fmap.get_root().render()
         map_html = map_html.replace(
-            "<body>",
-            '<body style="margin:0;padding:0;background:transparent;overflow:hidden;">'
+            "<head>",
+            "<head><style>html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;} .folium-map{width:100% !important;height:360px !important;}</style>",
+            1,
         )
+        map_html = map_html.replace(
+            "<body>",
+            '<body style="margin:0;padding:0;background:transparent;overflow:hidden;">',
+            1,
+        )
+
         components.html(map_html, height=380, scrolling=False)
 
     with c2:
