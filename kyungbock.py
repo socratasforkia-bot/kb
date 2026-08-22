@@ -827,7 +827,7 @@ def init_state():
             "subway": "3호선 경복궁역 3번 출구 도보 15분",
             "bus": "경복궁역 2번 출구에서 '7022','7212','1020' 탑승 후  '경복고등학교' 정류장 하차,'8111','7016','7018' 탑승 후 '효자동' 정류장 하차",
             "walk": "경복궁역에서 도보 약 15분",
-            "phone": "02-397-5301 (학교)",
+            "phone": "02-397-5301",
             "email": "kb.bukakfestival@gmail.com",
         }
 
@@ -2285,11 +2285,16 @@ def page_directions():
     with c1:
         school_lat = 37.5876963
         school_lon = 126.9717003
+
+        # 지하철역 자체의 위치
         station_lat = 37.575804
         station_lon = 126.973576
 
-        market_lat = 37.58035
-        market_lon = 126.96955
+        # 경복궁역 3번 출구 버스정류장
+        # ※ 경복궁역(지하철역)과 경복궁역 3번출구 버스정류장은 별개의 장소입니다.
+        # 버스정류소 번호: 01-116
+        bus_stop_lat = 37.57608
+        bus_stop_lon = 126.97320
 
         fmap = folium.Map(
             location=[school_lat, school_lon],
@@ -2311,36 +2316,50 @@ def page_directions():
                 "<b>경복고등학교</b><br>서울특별시 종로구 자하문로 17길 33",
                 max_width=280,
             ),
-            icon=folium.Icon(color="blue", icon="graduation-cap", prefix="fa"),
+            icon=folium.Icon(
+                color="blue",
+                icon="graduation-cap",
+                prefix="fa",
+            ),
         ).add_to(fmap)
 
-        # ② 경복궁역
+        # ② 경복궁역 — 지하철역 자체
         folium.Marker(
             [station_lat, station_lon],
             tooltip="경복궁역",
             popup=folium.Popup(
-                "<b>경복궁역</b><br>3호선 · 3번 출구",
+                "<b>경복궁역</b><br>3호선 · 지하철역",
                 max_width=220,
             ),
-            icon=folium.Icon(color="red", icon="subway", prefix="fa"),
+            icon=folium.Icon(
+                color="red",
+                icon="subway",
+                prefix="fa",
+            ),
         ).add_to(fmap)
 
-        # 경복궁역 3번 출구
+        # ③ 경복궁역 3번출구 버스정류장 — 경복궁역과 별도 장소
         folium.Marker(
-            [station_lat, station_lon],
-            tooltip="경복궁역 3번 출구",
+            [bus_stop_lat, bus_stop_lon],
+            tooltip="경복궁역 3번출구 버스정류장",
             popup=folium.Popup(
-                "<b>경복궁역 3번 출구</b>",
-                max_width=220,
+                "<b>경복궁역 3번출구 버스정류장</b><br>정류소 번호 01-116<br>1020 · 1711 · 7016 · 7018 · 7022 · 7212 · 8111",
+                max_width=280,
             ),
-            icon=folium.Icon(color="green", icon="bus", prefix="fa"),
+            icon=folium.Icon(
+                color="green",
+                icon="bus",
+                prefix="fa",
+            ),
         ).add_to(fmap)
 
         fmap.fit_bounds(
             [
                 [school_lat - 0.0022, school_lon - 0.0022],
                 [school_lat + 0.0022, school_lon + 0.0022],
-            ], padding=(8, 8), max_zoom=16
+            ],
+            padding=(8, 8),
+            max_zoom=16,
         )
 
         map_html = fmap.get_root().render()
@@ -2356,10 +2375,23 @@ def page_directions():
 
 {ss.site_info['address']}""")
         st.markdown("---")
-        st.markdown(f"<div style='font-weight:900;font-size:16px;'>🚇 3호선 경복궁역 3번 출구</div><div style='font-weight:800;margin:6px 0 14px;'>경복궁역 3번 출구 도보 약 15분</div>", unsafe_allow_html=True)
-        st.markdown("<div style='font-weight:900;font-size:16px;'>🚌 버스</div><div style='font-weight:800;line-height:1.8;'>7022 · 7212 · 1020 → 경복고등학교<br>8111 · 7016 · 7018 → 효자동</div>", unsafe_allow_html=True)
-        st.markdown("<div style='font-weight:900;font-size:16px;margin-top:14px;'>🚶 도보</div><div style='font-weight:800;'>경복궁역에서 약 15분</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='font-weight:900;font-size:16px;'>🚇 3호선 경복궁역 3번 출구</div>"
+            "<div style='font-weight:800;margin:6px 0 14px;'>경복궁역 3번 출구 도보 약 15분</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div style='font-weight:900;font-size:16px;'>🚌 버스</div>"
+            "<div style='font-weight:800;line-height:1.8;'>7022 · 7212 · 1020 → 경복고등학교<br>8111 · 7016 · 7018 → 효자동</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div style='font-weight:900;font-size:16px;margin-top:14px;'>🚶 도보</div>"
+            "<div style='font-weight:800;'>경복궁역에서 약 15분</div>",
+            unsafe_allow_html=True,
+        )
         st.markdown('</div>', unsafe_allow_html=True)
+
     render_footer()
 
 
